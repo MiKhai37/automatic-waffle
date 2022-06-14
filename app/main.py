@@ -106,5 +106,5 @@ def mongo_delete():
                   status=200,
                   mimetype='application/json')
 
-if __name__ == '__main__':
-  app.run(debug=False, port=5001, host='0.0.0.0')
+#if __name__ == '__main__':
+#  app.run(debug=False, port=5001, host='0.0.0.0')
