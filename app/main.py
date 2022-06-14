@@ -1,9 +1,12 @@
 from flask import Flask, request, json, Response
+from flask_cors import CORS, cross_origin
 from MongoAPI import MongoAPI
 
 app = Flask(__name__)
+CORS(app, support_credentials=True)
 
 @app.route('/')
+@cross_origin(supports_credentials=True)
 def base():
   return Response(response=json.dumps({"Status": "UP"}),
                   status=200,
@@ -11,6 +14,7 @@ def base():
 
 
 @app.route('/mongodb', methods=['GET'])
+@cross_origin(supports_credentials=True)
 def mongo_read():
   data = request.json
   if data is None or data == {}:
@@ -25,6 +29,7 @@ def mongo_read():
 
 
 @app.route('/mongodb', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def mongo_write():
   data = request.json
   if data is None or data == {} or 'Document' not in data:
@@ -38,6 +43,7 @@ def mongo_write():
                   mimetype='application/json')
 
 @app.route('/mongodb', methods=['PUT'])
+@cross_origin(supports_credentials=True)
 def mongo_update():
   data = request.json
   if data is None or data == {} or 'DataToBeUpdated' not in data:
@@ -51,6 +57,7 @@ def mongo_update():
                   mimetype='application/json')
 
 @app.route('/mongodb', methods=['DELETE'])
+@cross_origin(supports_credentials=True)
 def mongo_delete():
   data = request.json
   if data is None or data == {} or 'Filter' not in data:
