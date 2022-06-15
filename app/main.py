@@ -13,7 +13,7 @@ def base():
                   mimetype='application/json')
 
 
-@app.route('/games/all', methods=['GET'])
+@app.route('/games/all', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_read():
   data = request.json
