@@ -1,6 +1,7 @@
 from flask import Flask, request, json, Response
 from flask_cors import CORS, cross_origin
 from MongoAPI import MongoAPI
+import uuid
 
 app = Flask(__name__)
 CORS(app, support_credentials=True)
@@ -40,8 +41,18 @@ def mongo_readOne():
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
+initialTiles = [
+  {'letter': 'A', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 0}},
+  {'letter': 'B', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 1}},
+  {'letter': 'C', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 2}},
+  {'letter': 'D', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 3}},
+  {'letter': 'E', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 4}},
+  {'letter': 'F', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 5}},
+  {'letter': 'G', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 6}}
+];
+jsonInitialTiles = [json.dumps(tile) for tile in initialTiles]
 
-@app.route('/mongodb', methods=['POST'])
+@app.route('/games/create', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_write():
   data = request.json
@@ -50,7 +61,9 @@ def mongo_write():
                     status=400,
                     mimetype='application/json')
   obj1 = MongoAPI(data)
+  data['Document']['tiles'] = initialTiles
   response = obj1.write(data)
+  print(data)
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
