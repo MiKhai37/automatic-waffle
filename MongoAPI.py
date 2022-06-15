@@ -19,6 +19,14 @@ class MongoAPI:
     documents = self.collection.find()
     output = [{item: data[item] for item in data if item != '_id'} for data in documents]
     return output
+
+  def readOne(self):
+    print('Reading one document')
+    filt = self.data['Filter']
+    document = self.collection.find_one(filt)
+    output = {item: document[item] for item in document if item != '_id'}
+    return output
+
   
   def write(self, data):
     log.info('Writing Data')

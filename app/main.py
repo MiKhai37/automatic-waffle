@@ -13,7 +13,7 @@ def base():
                   mimetype='application/json')
 
 
-@app.route('/mongodb', methods=['GET'])
+@app.route('/games/getall', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def mongo_read():
   data = request.json
@@ -27,6 +27,19 @@ def mongo_read():
                   status=200,
                   mimetype='application/json')
 
+@app.route('/games/get', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def mongo_readOne():
+  data = request.json
+  if data is None or data == {}:
+    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+                    status=400,
+                    mimetype='application/json')
+  obj1 = MongoAPI(data)
+  response = obj1.readOne()
+  return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
 
 @app.route('/mongodb', methods=['POST'])
 @cross_origin(supports_credentials=True)
