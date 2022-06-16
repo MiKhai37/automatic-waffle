@@ -4,8 +4,6 @@ from pymongo import MongoClient
 import logging as log
 load_dotenv()
 
-log.basicConfig(level=log.DEBUG, filename='app.log')
-
 class MongoAPI:
   def __init__(self, data):
     self.client = MongoClient(os.getenv('MONGODB_URI'))  
