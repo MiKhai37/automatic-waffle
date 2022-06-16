@@ -84,9 +84,12 @@ def mongo_createGame():
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
-  nbPlayers = int(data['Document']['nbPlayers'])
+
   data['Document']['tiles'] = initialTiles
 
+  data['Document']['gameInfo'] = {'gameId': data['Document']['gameID'], 'gameName': data['Document']['gamename'], 'nbPlayers': data['Document']['nbPlayers'], 'state': data['Document']['state']}
+
+  nbPlayers = int(data['Document']['nbPlayers'])
   data['Document']['players'] = [f'Joueur  {i + 1}' for i in range(nbPlayers)]
   data['Document']['devPlayers'] = [{'pseudo': f'Joueur  {i + 1}', 'tiles': initialTiles} for i in range(nbPlayers)]
 
