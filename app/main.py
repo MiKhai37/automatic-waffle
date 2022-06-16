@@ -87,7 +87,7 @@ def mongo_createGame():
 
   data['Document']['tiles'] = initialTiles
 
-  data['Document']['gameInfo'] = {'gameId': data['Document']['gameID'], 'gameName': data['Document']['gamename'], 'nbPlayers': data['Document']['nbPlayers'], 'state': data['Document']['state']}
+  data['Document']['gameInfo'] = {'gameId': data['Document']['gameID'], 'gameName': data['Document']['gamename'], 'nbPlayers': data['Document']['nbPlayers'], 'state': 'waiting'}
 
   nbPlayers = int(data['Document']['nbPlayers'])
   data['Document']['players'] = [f'Joueur  {i + 1}' for i in range(nbPlayers)]
