@@ -45,7 +45,6 @@ class MongoAPI:
     updated_data = {"$set": self.data['DataToBeUpdated']}
     response = self.collection.update_one(filt, updated_data)
     output = {'Status': 'Successfully Updated' if response.modified_count > 0 else "Nothing was updated."}
-    log.info(f'Reading Document, id: {response["_id"]}, modified_count: {response.modified_count}')
     return output
   
   def delete(self, data):
@@ -53,5 +52,4 @@ class MongoAPI:
     filt = data['Filter']
     response = self.collection.delete_one(filt)
     output = {'Status': 'Successfully Deleted' if response.deleted_count > 0 else "Document not found."}
-    log.info(f'Deleting Document, id: {response["_id"]}')
     return output
