@@ -16,8 +16,9 @@ def base():
 
 @app.route('/games/all', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_read():
+def mongo_readAllGames():
   data = request.json
+  data['collection']='games'
   if data is None or data == {}:
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
@@ -30,8 +31,9 @@ def mongo_read():
 
 @app.route('/games/get', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_readOne():
+def mongo_readGame():
   data = request.json
+  data['collection']='games'
   if data is None or data == {}:
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
@@ -50,12 +52,12 @@ initialTiles = [
   {'letter': 'F', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 5}},
   {'letter': 'G', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 6}}
 ];
-jsonInitialTiles = [json.dumps(tile) for tile in initialTiles]
 
 @app.route('/games/create', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_write():
+def mongo_writeGame():
   data = request.json
+  data['collection']='games'
   if data is None or data == {} or 'Document' not in data:
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
@@ -63,15 +65,15 @@ def mongo_write():
   obj1 = MongoAPI(data)
   data['Document']['tiles'] = initialTiles
   response = obj1.write(data)
-  print(data)
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
 
-@app.route('/mongodb', methods=['PUT'])
+@app.route('/games/update', methods=['PUT'])
 @cross_origin(supports_credentials=True)
-def mongo_update():
+def mongo_updateGame():
   data = request.json
+  data['collection']='games'
   if data is None or data == {} or 'DataToBeUpdated' not in data:
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
@@ -82,10 +84,11 @@ def mongo_update():
                   status=200,
                   mimetype='application/json')
 
-@app.route('/mongodb', methods=['DELETE'])
+@app.route('/games/delete', methods=['DELETE'])
 @cross_origin(supports_credentials=True)
-def mongo_delete():
+def mongo_deleteGame():
   data = request.json
+  data['collection']='games'
   if data is None or data == {} or 'Filter' not in data:
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,

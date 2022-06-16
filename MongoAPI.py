@@ -4,6 +4,8 @@ from pymongo import MongoClient
 import logging as log
 load_dotenv()
 
+log.basicConfig(level=log.DEBUG, filename='app.log')
+
 class MongoAPI:
   def __init__(self, data):
     self.client = MongoClient(os.getenv('MONGODB_URI'))  
@@ -13,27 +15,28 @@ class MongoAPI:
     cursor = self.client[database]
     self.collection = cursor[collection]
     self.data = data
+    log.info(f'MongoDB Python Connector Initialized')
   
   def read(self):
-    print('Reading All Data')
     documents = self.collection.find()
     output = [{item: data[item] for item in data if item != '_id'} for data in documents]
+    log.info(f'Reading All Documents')
     return output
 
   def readOne(self):
-    print('Reading one document')
     filt = self.data['Filter']
     document = self.collection.find_one(filt)
     output = {item: document[item] for item in document if item != '_id'}
+    log.info(f'Reading Document, id: {document["_id"]}')
     return output
 
   
   def write(self, data):
-    log.info('Writing Data')
     new_document = data['Document']
     response = self.collection.insert_one(new_document)
     output = {'Status': 'Successfully Inserted',
               'Document_ID': str(response.inserted_id)}
+    log.info(f'Writing New Document, id: {response.inserted_id}')
     return output
 
   def update(self):
@@ -42,6 +45,7 @@ class MongoAPI:
     updated_data = {"$set": self.data['DataToBeUpdated']}
     response = self.collection.update_one(filt, updated_data)
     output = {'Status': 'Successfully Updated' if response.modified_count > 0 else "Nothing was updated."}
+    log.info(f'Reading Document, id: {response["_id"]}, modified_count: {response.modified_count}')
     return output
   
   def delete(self, data):
@@ -49,4 +53,5 @@ class MongoAPI:
     filt = data['Filter']
     response = self.collection.delete_one(filt)
     output = {'Status': 'Successfully Deleted' if response.deleted_count > 0 else "Document not found."}
+    log.info(f'Deleting Document, id: {response["_id"]}')
     return output
