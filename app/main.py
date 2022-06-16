@@ -27,15 +27,18 @@ def base():
 @app.route('/games/all', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_readAllGames():
-  app.logger.info('MongoDB read all games')
   data = request.json
   data['collection']='games'
+
   if data is None or data == {}:
+    app.logger.warning('MongoDB read all games: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
+
   obj1 = MongoAPI(data)
   response = obj1.read()
+  app.logger.info('MongoDB read all games: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -43,15 +46,18 @@ def mongo_readAllGames():
 @app.route('/games/get', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_readGame():
-  app.logger.info('MongoDB read game')
   data = request.json
   data['collection']='games'
+
   if data is None or data == {}:
+    app.logger.warning('MongoDB read game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
+
   obj1 = MongoAPI(data)
   response = obj1.readOne()
+  app.logger.info('MongoDB read game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -67,17 +73,25 @@ initialTiles = [
 
 @app.route('/games/create', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_writeGame():
-  app.logger.info('MongoDB create game')
+def mongo_createGame():
   data = request.json
   data['collection']='games'
+
   if data is None or data == {} or 'Document' not in data:
+    app.logger.warning('MongoDB create game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
+
   obj1 = MongoAPI(data)
+  nbPlayers = int(data['Document']['nbPlayers'])
   data['Document']['tiles'] = initialTiles
+
+  data['Document']['players'] = [f'Joueur  {i + 1}' for i in range(nbPlayers)]
+  data['Document']['devPlayers'] = [{'pseudo': f'Joueur  {i + 1}', 'tiles': initialTiles} for i in range(nbPlayers)]
+
   response = obj1.write(data)
+  app.logger.info('MongoDB create game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -85,15 +99,18 @@ def mongo_writeGame():
 @app.route('/games/update', methods=['PUT'])
 @cross_origin(supports_credentials=True)
 def mongo_updateGame():
-  app.logger.info('MongoDB update game')
   data = request.json
   data['collection']='games'
+
   if data is None or data == {} or 'DataToBeUpdated' not in data:
+    app.logger.warning('MongoDB update game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
+
   obj1 = MongoAPI(data)
   response = obj1.update()
+  app.logger.info('MongoDB update game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -101,15 +118,18 @@ def mongo_updateGame():
 @app.route('/games/delete', methods=['DELETE'])
 @cross_origin(supports_credentials=True)
 def mongo_deleteGame():
-  app.logger.info('MongoDB delete game')
   data = request.json
   data['collection']='games'
+
   if data is None or data == {} or 'Filter' not in data:
+    app.logger.warning('MongoDB delete game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
+
   obj1 = MongoAPI(data)
   response = obj1.delete(data)
+  app.logger.info('MongoDB delete game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
