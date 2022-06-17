@@ -29,7 +29,13 @@ class MongoAPI:
     log.info(f'Reading Document, id: {document["_id"]}')
     return output
 
-  def readGameInfo(self):
+  def readAllGameInfo(self):
+    documents = self.collection.find()
+    output = [document['gameInfo'] for document in documents]
+    log.info(f'Reading All games info')
+    return output
+
+  def readOneGameInfo(self):
     filt = self.data['Filter']
     document = self.collection.find_one(filt)
     output = document['gameInfo']

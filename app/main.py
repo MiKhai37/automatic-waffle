@@ -22,6 +22,9 @@ Return all game documents
 -/games/get
 Return game document correspondig to the given game ID
 
+-/games/info/all
+Return all game info documents
+
 -/games/info/get
 Return game info correspondig to the given game ID
 
@@ -68,7 +71,7 @@ def mongo_readAllGames():
 
 @app.route('/games/get', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_readGame():
+def mongo_readOneGame():
   data = request.json
   data['collection']='games'
 
@@ -85,9 +88,28 @@ def mongo_readGame():
                   status=200,
                   mimetype='application/json')
 
+@app.route('/games/info/all', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def mongo_readAllGameInfo():
+  data = request.json
+  data['collection']='games'
+
+  if data is None or data == {}:
+    app.logger.warning('MongoDB read all info games: fail, no data provided')
+    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+                    status=400,
+                    mimetype='application/json')
+
+  obj1 = MongoAPI(data)
+  response = obj1.readAllGameInfo()
+  app.logger.info('MongoDB read all info games: success')
+  return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
+
 @app.route('/games/info/get', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_readGameInfo():
+def mongo_readOneGameInfo():
   data = request.json
   data['collection']='games'
 
@@ -98,7 +120,7 @@ def mongo_readGameInfo():
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
-  response = obj1.readGameInfo()
+  response = obj1.readOneGameInfo()
   app.logger.info('MongoDB read info game: success')
   return Response(response=json.dumps(response),
                   status=200,
@@ -130,7 +152,7 @@ def mongo_createGame():
 
   data['Document']['tiles'] = initialTiles
 
-  data['Document']['gameInfo'] = {'gameId': data['Document']['gameID'], 'gameName': data['Document']['gamename'], 'nbPlayers': data['Document']['nbPlayers'], 'state': 'waiting'}
+  data['Document']['gameInfo'] = {'gameID': data['Document']['gameID'], 'gameName': data['Document']['gamename'], 'nbPlayers': data['Document']['nbPlayers'], 'state': 'waiting'}
 
   nbPlayers = int(data['Document']['nbPlayers'])
   data['Document']['players'] = [f'Joueur  {i + 1}' for i in range(nbPlayers)]
