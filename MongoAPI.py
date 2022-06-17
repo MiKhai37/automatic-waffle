@@ -1,4 +1,5 @@
 import os
+from pydoc import doc
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import logging as log
@@ -28,6 +29,12 @@ class MongoAPI:
     log.info(f'Reading Document, id: {document["_id"]}')
     return output
 
+  def readGameInfo(self):
+    filt = self.data['Filter']
+    document = self.collection.find_one(filt)
+    output = document['gameInfo']
+    log.info(f'Reading game info, id: {document["_id"]}')
+    return output
   
   def write(self, data):
     new_document = data['Document']

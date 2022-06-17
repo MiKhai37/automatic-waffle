@@ -11,6 +11,30 @@ gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 
+"""
+Routes Summary
+- /
+Return backend status
+
+-/games/all
+Return all game documents
+
+-/games/get
+Return game document correspondig to the given game ID
+
+-/games/info/get
+Return game info correspondig to the given game ID
+
+-/games/create
+Create a game document
+
+-/games/update
+Update the game document correspondig to the given game ID
+
+-/games/delete
+Delete the game document correspondig to the given game ID
+"""
+
 @app.route('/')
 @cross_origin(supports_credentials=True)
 def base():
@@ -22,7 +46,6 @@ def base():
   return Response(response=json.dumps({"Status": "UP"}),
                   status=200,
                   mimetype='application/json')
-
 
 @app.route('/games/all', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -61,6 +84,26 @@ def mongo_readGame():
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
+
+@app.route('/games/info/get', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def mongo_readGameInfo():
+  data = request.json
+  data['collection']='games'
+
+  if data is None or data == {}:
+    app.logger.warning('MongoDB read info game: fail, no data provided')
+    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+                    status=400,
+                    mimetype='application/json')
+
+  obj1 = MongoAPI(data)
+  response = obj1.readGameInfo()
+  app.logger.info('MongoDB read info game: success')
+  return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
+
 initialTiles = [
   {'letter': 'A', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 0}},
   {'letter': 'B', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 1}},
