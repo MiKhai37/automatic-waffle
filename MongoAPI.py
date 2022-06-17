@@ -3,6 +3,7 @@ from pydoc import doc
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import logging as log
+
 load_dotenv()
 
 class MongoAPI:

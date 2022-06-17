@@ -1,15 +1,21 @@
-import logging
-from flask import Flask, request, json, Response
+from flask import Flask, render_template, session, request, \
+    copy_current_request_context, json, Response
+from flask_socketio import SocketIO, emit, join_room, leave_room, \
+    close_room, rooms, disconnect
 from flask_cors import CORS, cross_origin
 from MongoAPI import MongoAPI
 import uuid
+from threading import Lock
+
+async_mode = None
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
 CORS(app, support_credentials=True)
 
-gunicorn_logger = logging.getLogger('gunicorn.error')
-app.logger.handlers = gunicorn_logger.handlers
-app.logger.setLevel(gunicorn_logger.level)
+socketio = SocketIO(app, async_mode=async_mode)
+thread = None
+thread_lock = Lock()
 
 """
 Routes Summary
@@ -38,17 +44,12 @@ Update the game document correspondig to the given game ID
 Delete the game document correspondig to the given game ID
 """
 
-@app.route('/')
-@cross_origin(supports_credentials=True)
-def base():
-  app.logger.debug('This is a DEBUG log record.')
-  app.logger.info('This is an INFO log record.')
-  app.logger.warning('This is a WARNING log record.')
-  app.logger.error('This is an ERROR log record.')
-  app.logger.critical('This is a CRITICAL log record.')
-  return Response(response=json.dumps({"Status": "UP"}),
-                  status=200,
-                  mimetype='application/json')
+#@app.route('/')
+#@cross_origin(supports_credentials=True)
+#def base():
+#  return Response(response=json.dumps({"Status": "UP"}),
+#                  status=200,
+#                  mimetype='application/json')
 
 @app.route('/games/all', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -57,14 +58,12 @@ def mongo_readAllGames():
   data['collection']='games'
 
   if data is None or data == {}:
-    app.logger.warning('MongoDB read all games: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
   response = obj1.read()
-  app.logger.info('MongoDB read all games: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -76,14 +75,12 @@ def mongo_readOneGame():
   data['collection']='games'
 
   if data is None or data == {}:
-    app.logger.warning('MongoDB read game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
   response = obj1.readOne()
-  app.logger.info('MongoDB read game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -95,14 +92,12 @@ def mongo_readAllGameInfo():
   data['collection']='games'
 
   if data is None or data == {}:
-    app.logger.warning('MongoDB read all info games: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
   response = obj1.readAllGameInfo()
-  app.logger.info('MongoDB read all info games: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -114,14 +109,12 @@ def mongo_readOneGameInfo():
   data['collection']='games'
 
   if data is None or data == {}:
-    app.logger.warning('MongoDB read info game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
   response = obj1.readOneGameInfo()
-  app.logger.info('MongoDB read info game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -143,7 +136,6 @@ def mongo_createGame():
   data['collection']='games'
 
   if data is None or data == {} or 'Document' not in data:
-    app.logger.warning('MongoDB create game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
@@ -159,7 +151,6 @@ def mongo_createGame():
   data['Document']['devPlayers'] = [{'pseudo': f'Joueur  {i + 1}', 'tiles': initialTiles} for i in range(nbPlayers)]
 
   response = obj1.write(data)
-  app.logger.info('MongoDB create game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -171,14 +162,12 @@ def mongo_updateGame():
   data['collection']='games'
 
   if data is None or data == {} or 'DataToBeUpdated' not in data:
-    app.logger.warning('MongoDB update game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
   response = obj1.update()
-  app.logger.info('MongoDB update game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
@@ -190,14 +179,117 @@ def mongo_deleteGame():
   data['collection']='games'
 
   if data is None or data == {} or 'Filter' not in data:
-    app.logger.warning('MongoDB delete game: fail, no data provided')
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
   response = obj1.delete(data)
-  app.logger.info('MongoDB delete game: success')
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
+
+### SocketIO
+
+def background_thread():
+    """Example of how to send server generated events to clients."""
+    count = 0
+    while True:
+        socketio.sleep(10)
+        count += 1
+        socketio.emit('my_response',
+                      {'data': 'Server generated event', 'count': count})
+
+
+@app.route('/')
+@cross_origin(supports_credentials=True)
+def index():
+    return render_template('index.html', async_mode=socketio.async_mode)
+
+
+@socketio.event
+def my_event(message):
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': message['data'], 'count': session['receive_count']})
+
+
+@socketio.event
+def my_broadcast_event(message):
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': message['data'], 'count': session['receive_count']},
+         broadcast=True)
+
+
+@socketio.event
+def join(message):
+    join_room(message['room'])
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': 'In rooms: ' + ', '.join(rooms()),
+          'count': session['receive_count']})
+
+
+@socketio.event
+def leave(message):
+    leave_room(message['room'])
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': 'In rooms: ' + ', '.join(rooms()),
+          'count': session['receive_count']})
+
+
+@socketio.on('close_room')
+def on_close_room(message):
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.',
+                         'count': session['receive_count']},
+         to=message['room'])
+    close_room(message['room'])
+
+
+@socketio.event
+def my_room_event(message):
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': message['data'], 'count': session['receive_count']},
+         to=message['room'])
+
+
+@socketio.event
+def disconnect_request():
+    @copy_current_request_context
+    def can_disconnect():
+        disconnect()
+
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    # for this emit we use a callback function
+    # when the callback function is invoked we know that the message has been
+    # received and it is safe to disconnect
+    emit('my_response',
+         {'data': 'Disconnected!', 'count': session['receive_count']},
+         callback=can_disconnect)
+
+
+@socketio.event
+def my_ping():
+    emit('my_pong')
+
+
+@socketio.event
+def connect():
+    global thread
+    with thread_lock:
+        if thread is None:
+            thread = socketio.start_background_task(background_thread)
+    emit('my_response', {'data': 'Connected', 'count': 0})
+
+
+@socketio.on('disconnect')
+def test_disconnect():
+    print('Client disconnected', request.sid)
+
+
+if __name__ == '__main__':
+    socketio.run(app)
