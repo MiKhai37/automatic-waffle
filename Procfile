@@ -1,2 +1,2 @@
 web: gunicorn --log-level=info wsgi:app
-web: gunicorn --log-level=debug test:app
+web: gunicorn -k flask_sockets.worker chat:app
