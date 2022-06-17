@@ -1,1 +1,1 @@
-web: gunicorn --log-level=info wsgi:app
+web: gunicorn wsgi:app
