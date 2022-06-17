@@ -8,7 +8,6 @@ This simple application uses WebSockets to run a primitive chat server.
 """
 
 import os
-import logging
 import redis
 import gevent
 from flask import Flask, render_template
@@ -22,8 +21,6 @@ app.debug = 'DEBUG' in os.environ
 
 sockets = Sockets(app)
 redis = redis.from_url(REDIS_URL)
-
-
 
 class ChatBackend(object):
     """Interface for registering and updating WebSocket clients."""
