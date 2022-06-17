@@ -1,1 +1,1 @@
-web: gunicorn wsgi:app
+web: gunicorn -k flask_sockets.worker wsgi:app
