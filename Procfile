@@ -1,1 +1,1 @@
-web: gunicorn -k flask_sockets.worker wsgi:app
+gunicorn --worker-class eventlet -w 1 wsgi:app
