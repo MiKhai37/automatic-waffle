@@ -1,4 +1,5 @@
-from flask import Flask, render_template, session, request, \
+import imp
+from flask import Flask, message_flashed, render_template, session, request, \
     copy_current_request_context, json, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
@@ -6,6 +7,7 @@ from flask_cors import CORS, cross_origin
 from MongoAPI import MongoAPI
 import uuid
 from threading import Lock
+import logging
 
 async_mode = None
 
@@ -13,7 +15,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 CORS(app, support_credentials=True)
 
-socketio = SocketIO(app, async_mode=async_mode)
+gunicorn_logger = logging.getLogger('gunicorn.error')
+app.logger.handlers = gunicorn_logger.handlers
+app.logger.setLevel(gunicorn_logger.level)
+
+socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins=['http://localhost:3000', 'http://0.0.0.0:5000'])
 thread = None
 thread_lock = Lock()
 
@@ -216,6 +222,7 @@ def my_event(message):
 
 @socketio.event
 def my_broadcast_event(message):
+    app.logger.info('Broadcast message:' + message['data'])
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
          {'data': message['data'], 'count': session['receive_count']},
@@ -285,11 +292,22 @@ def connect():
             thread = socketio.start_background_task(background_thread)
     emit('my_response', {'data': 'Connected', 'count': 0})
 
+@socketio.on('whoami')
+def whoami():
+  emit('whoami', {'data': 'Personne!', 'count': 0})
+
+@socketio.on('connect')
+def test_connection():
+    app.logger.info('Client connected: ' + request.sid)
 
 @socketio.on('disconnect')
 def test_disconnect():
-    print('Client disconnected', request.sid)
+    app.logger.info('Client disconnected: ' + request.sid)
 
+@socketio.on('message')
+def handle_message(message):
+    emit('my_response',
+         {'data': message['data'], 'count': session['receive_count']})
 
 if __name__ == '__main__':
     socketio.run(app)
