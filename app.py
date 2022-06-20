@@ -19,7 +19,7 @@ gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 
-socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins=['http://localhost:3000', 'http://0.0.0.0:5000'])
+socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins=['http://localhost:3000', 'http://0.0.0.0:5000', 'https://friendly-funicular.vercel.app'])
 thread = None
 thread_lock = Lock()
 
@@ -212,6 +212,10 @@ def background_thread():
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
+@app.route('/test')
+@cross_origin(supports_credentials=True)
+def test():
+    return render_template('test.html', async_mode=socketio.async_mode)
 
 @socketio.event
 def my_event(message):
@@ -292,9 +296,10 @@ def connect():
             thread = socketio.start_background_task(background_thread)
     emit('my_response', {'data': 'Connected', 'count': 0})
 
-@socketio.on('whoami')
-def whoami():
-  emit('whoami', {'data': 'Personne!', 'count': 0})
+@socketio.event
+def connecto():
+  app.logger.info('Test whoami')
+  emit('connecto', {'data': 'Personne!', 'count': 0})
 
 @socketio.on('connect')
 def test_connection():
