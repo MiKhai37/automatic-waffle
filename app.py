@@ -217,7 +217,7 @@ def mongo_readAllUsers():
 @cross_origin(supports_credentials=True)
 def mongo_readUser():
   data = request.json
-  data['collection']='user'
+  data['collection']='users'
 
   if data is None or data == {}:
     return Response(response=json.dumps({"Error": "Please provide connection information"}),
@@ -233,17 +233,19 @@ def mongo_readUser():
 @app.route('/users/create', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_createUser():
-  data = request.json
-  data['collection']='users'
+    data = request.json
+    data['collection']='users'
 
-  if data is None or data == {} or 'Document' not in data:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+    if data is None or data == {}:
+        return Response(response=json.dumps({"Error": "Please provide connection information"}),
                     status=400,
                     mimetype='application/json')
 
-  obj1 = MongoAPI(data)
-  response = obj1.write(data)
-  return Response(response=json.dumps(response),
+    data['Document']['userName'] = 'Jean-Eudes'
+    data['Document']['userGameIDs'] = []
+    obj1 = MongoAPI(data)
+    response = obj1.createUser(data)
+    return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
 ### SocketIO

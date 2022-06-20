@@ -46,8 +46,9 @@ class MongoAPI:
   def write(self, data):
     new_document = data['Document']
     response = self.collection.insert_one(new_document)
-    output = {'Status': 'Successfully Inserted',
-              'Document_ID': str(response.inserted_id)}
+    output = {item: new_document[item] for item in new_document if item != '_id'}
+    output['Status'] = 'Successfully Inserted'
+    output['Document_ID'] = str(response.inserted_id)
     log.info(f'Writing New Document, id: {response.inserted_id}')
     return output
 
@@ -75,6 +76,7 @@ class MongoAPI:
   def readUser(self):
     filt = self.data['Filter']
     document = self.collection.find_one(filt)
+    log.info(document)
     output = {item: document[item] for item in document if item != '_id'}
     log.info(f'Reading Document, id: {document["_id"]}')
     return output
@@ -82,8 +84,9 @@ class MongoAPI:
   def createUser(self, data):
     new_document = data['Document']
     response = self.collection.insert_one(new_document)
-    output = {'Status': 'Successfully Inserted',
-              'Document_ID': str(response.inserted_id)}
+    output = {item: new_document[item] for item in new_document if item != '_id'}
+    output['Status'] = 'Successfully Inserted'
+    output['Document_ID'] = str(response.inserted_id)
     log.info(f'Writing New Document, id: {response.inserted_id}')
     return output
 
