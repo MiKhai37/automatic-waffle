@@ -8,6 +8,7 @@ from MongoAPI import MongoAPI
 import uuid
 from threading import Lock
 import logging
+from datetime import datetime
 
 async_mode = None
 
@@ -69,14 +70,14 @@ def mongo_readAllGames():
                     mimetype='application/json')
 
   obj1 = MongoAPI(data)
-  response = obj1.read()
+  response = obj1.readAll()
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
 
 @app.route('/games/get', methods=['POST'])
 @cross_origin(supports_credentials=True)
-def mongo_readOneGame():
+def mongo_readGame():
   data = request.json
   data['collection']='games'
 
@@ -195,6 +196,56 @@ def mongo_deleteGame():
                   status=200,
                   mimetype='application/json')
 
+@app.route('/users/all', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def mongo_readAllUsers():
+  data = request.json
+  data['collection']='users'
+
+  if data is None or data == {}:
+    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+                    status=400,
+                    mimetype='application/json')
+
+  obj1 = MongoAPI(data)
+  response = obj1.readAllUsers()
+  return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
+
+@app.route('/users/get', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def mongo_readUser():
+  data = request.json
+  data['collection']='user'
+
+  if data is None or data == {}:
+    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+                    status=400,
+                    mimetype='application/json')
+
+  obj1 = MongoAPI(data)
+  response = obj1.readUser()
+  return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
+
+@app.route('/users/create', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def mongo_createUser():
+  data = request.json
+  data['collection']='users'
+
+  if data is None or data == {} or 'Document' not in data:
+    return Response(response=json.dumps({"Error": "Please provide connection information"}),
+                    status=400,
+                    mimetype='application/json')
+
+  obj1 = MongoAPI(data)
+  response = obj1.write(data)
+  return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
 ### SocketIO
 
 def background_thread():
@@ -219,22 +270,24 @@ def test():
 
 @socketio.event
 def my_event(message):
+    app.logger.info('my_event:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']})
+         {'data': message['data'], 'time': str(datetime.now()), 'count': session['receive_count']})
 
 
 @socketio.event
 def my_broadcast_event(message):
-    app.logger.info('Broadcast message:' + message['data'])
+    app.logger.info('my_broadcast_event:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']},
+         {'data': message['data'], 'time': str(datetime.now()), 'count': session['receive_count']},
          broadcast=True)
 
 
 @socketio.event
 def join(message):
+    app.logger.info('join:' + json.dumps(message))
     join_room(message['room'])
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
@@ -244,6 +297,7 @@ def join(message):
 
 @socketio.event
 def leave(message):
+    app.logger.info('leave:' + json.dumps(message))
     leave_room(message['room'])
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
@@ -266,6 +320,10 @@ def my_room_event(message):
     emit('my_response',
          {'data': message['data'], 'count': session['receive_count']},
          to=message['room'])
+
+@socketio.event
+def what_are_my_rooms():
+    emit('my_rooms', {'data': 'In rooms: ' + ', '.join(rooms())})
 
 
 @socketio.event
@@ -296,11 +354,6 @@ def connect():
             thread = socketio.start_background_task(background_thread)
     emit('my_response', {'data': 'Connected', 'count': 0})
 
-@socketio.event
-def connecto():
-  app.logger.info('Test whoami')
-  emit('connecto', {'data': 'Personne!', 'count': 0})
-
 @socketio.on('connect')
 def test_connection():
     app.logger.info('Client connected: ' + request.sid)
@@ -308,11 +361,6 @@ def test_connection():
 @socketio.on('disconnect')
 def test_disconnect():
     app.logger.info('Client disconnected: ' + request.sid)
-
-@socketio.on('message')
-def handle_message(message):
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']})
 
 if __name__ == '__main__':
     socketio.run(app)
