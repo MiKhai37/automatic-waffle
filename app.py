@@ -1,20 +1,28 @@
-import imp
 from flask import Flask, message_flashed, render_template, session, request, \
     copy_current_request_context, json, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 from flask_cors import CORS, cross_origin
+from flask_session import Session
 from MongoAPI import MongoAPI
 import uuid
 from threading import Lock
 import logging
 from datetime import datetime
 
+
 async_mode = None
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = 'not_very_secret!'
 CORS(app, support_credentials=True)
+
+#app.config['SESSION_TYPE'] = 'mongodb'
+#app.config['SESSION_PERMANENT'] = False
+#app.config['SESSION_USE_SIGNER'] = True
+#app.config['SESSION_MONGODB'] = MongoClient(os.getenv('MONGODB_URI'))
+
+#Session(app)
 
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
@@ -25,7 +33,7 @@ thread = None
 thread_lock = Lock()
 
 """
-Routes Summary
+Endpoint routes summary
 - /
 Return backend status
 
@@ -51,40 +59,34 @@ Update the game document correspondig to the given game ID
 Delete the game document correspondig to the given game ID
 """
 
-#@app.route('/')
-#@cross_origin(supports_credentials=True)
-#def base():
-#  return Response(response=json.dumps({"Status": "UP"}),
-#                  status=200,
-#                  mimetype='application/json')
+@app.route('/')
+@cross_origin(supports_credentials=True)
+def base():
+ return Response(response=json.dumps({"Status": "UP"}),
+                 status=200,
+                 mimetype='application/json')
 
-@app.route('/games/all', methods=['POST'])
+@app.route('/games')
 @cross_origin(supports_credentials=True)
 def mongo_readAllGames():
-  data = request.json
-  data['collection']='games'
+    data = {
+        'collection': 'games'   
+    }
 
-  if data is None or data == {}:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
+    obj1 = MongoAPI(data)
+    response = obj1.readAll()
+    return Response(response=json.dumps(response),
+                    status=200,
                     mimetype='application/json')
 
-  obj1 = MongoAPI(data)
-  response = obj1.readAll()
-  return Response(response=json.dumps(response),
-                  status=200,
-                  mimetype='application/json')
 
-@app.route('/games/get', methods=['POST'])
+@app.route('/games/<id>')
 @cross_origin(supports_credentials=True)
-def mongo_readGame():
-  data = request.json
-  data['collection']='games'
-
-  if data is None or data == {}:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
-                    mimetype='application/json')
+def mongo_readGame(id):
+  data = {
+    'collection': 'games',
+    'Filter': {'gameID': id}
+  }
 
   obj1 = MongoAPI(data)
   response = obj1.readOne()
@@ -92,39 +94,58 @@ def mongo_readGame():
                   status=200,
                   mimetype='application/json')
 
-@app.route('/games/info/all', methods=['POST'])
-@cross_origin(supports_credentials=True)
-def mongo_readAllGameInfo():
-  data = request.json
-  data['collection']='games'
 
-  if data is None or data == {}:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
+@app.route('/games/join/<gameID>', methods=['PUT'])
+@cross_origin(supports_credentials=True)
+def mongo_joinGame(gameID):
+  data = request.json
+  data['collection'] = 'games'
+  data['DataToBeUpdated'] = {'player': gameID}
+  response = MongoAPI(data).update()
+  return Response(response=json.dumps(response),
+                status=200,
+                mimetype='application/json')
+
+
+@app.route('/games/leave/<gameID>', methods=['PUT'])
+@cross_origin(supports_credentials=True)
+def mongo_leaveGame(gameID):
+  data = request.json
+  data['DataToBeUpdated'] = {'player': gameID}
+  response = MongoAPI(data).update()
+  return Response(response=json.dumps(response),
+                status=200,
+                mimetype='application/json')
+
+
+@app.route('/games/info')
+@cross_origin(supports_credentials=True)
+def mongo_readAllInfo():
+    data = {
+        'collection': 'games'   
+    }
+
+    obj1 = MongoAPI(data)
+    response = obj1.readAllGameInfo()
+    return Response(response=json.dumps(response),
+                    status=200,
                     mimetype='application/json')
 
-  obj1 = MongoAPI(data)
-  response = obj1.readAllGameInfo()
-  return Response(response=json.dumps(response),
-                  status=200,
-                  mimetype='application/json')
 
-@app.route('/games/info/get', methods=['POST'])
+@app.route('/games/info/<id>')
 @cross_origin(supports_credentials=True)
-def mongo_readOneGameInfo():
-  data = request.json
-  data['collection']='games'
+def mongo_readOneInfo(id):
+    data = {
+      'collection': 'games',
+      'Filter': {'gameID': id}
+    }
 
-  if data is None or data == {}:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
+    obj1 = MongoAPI(data)
+    response = obj1.readOneGameInfo()
+    return Response(response=json.dumps(response),
+                    status=200,
                     mimetype='application/json')
 
-  obj1 = MongoAPI(data)
-  response = obj1.readOneGameInfo()
-  return Response(response=json.dumps(response),
-                  status=200,
-                  mimetype='application/json')
 
 initialTiles = [
   {'letter': 'A', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 0}},
@@ -136,42 +157,42 @@ initialTiles = [
   {'letter': 'G', 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': { 'place': 'rack', 'coords': 6}}
 ];
 
-@app.route('/games/create', methods=['POST'])
+@app.route('/games', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_createGame():
-  data = request.json
-  data['collection']='games'
+    data = request.json
+    data['collection']='games'
 
-  if data is None or data == {} or 'Document' not in data:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
+    obj1 = MongoAPI(data)
+
+    data['Document']['tiles'] = initialTiles
+    nbPlayers = int(data['Document']['nbPlayers'])
+
+    data['Document']['gameInfo'] = {
+      'gameID': data['Document']['gameID'],
+      'creatorID': data['Document']['creatorID'],
+      'gameName': data['Document']['gamename'],
+      'nbPlayers': data['Document']['nbPlayers'],
+      'players': [f'Joueur  {i + 1}' for i in range(nbPlayers)],
+      'remainingPlaces': data['Document']['nbPlayers'],
+      'state': 'not started'
+      }
+    
+    data['Document']['players'] = [f'Joueur  {i + 1}' for i in range(nbPlayers)]
+    data['Document']['devPlayers'] = [{'isFree': True,'userID': [], 'pseudo': f'Joueur  {i + 1}', 'tiles': initialTiles} for i in range(nbPlayers)]
+
+    response = obj1.create(data)
+    return Response(response=json.dumps(response),
+                    status=200,
                     mimetype='application/json')
 
-  obj1 = MongoAPI(data)
 
-  data['Document']['tiles'] = initialTiles
-
-  data['Document']['gameInfo'] = {'gameID': data['Document']['gameID'], 'gameName': data['Document']['gamename'], 'nbPlayers': data['Document']['nbPlayers'], 'state': 'waiting'}
-
-  nbPlayers = int(data['Document']['nbPlayers'])
-  data['Document']['players'] = [f'Joueur  {i + 1}' for i in range(nbPlayers)]
-  data['Document']['devPlayers'] = [{'pseudo': f'Joueur  {i + 1}', 'tiles': initialTiles} for i in range(nbPlayers)]
-
-  response = obj1.write(data)
-  return Response(response=json.dumps(response),
-                  status=200,
-                  mimetype='application/json')
-
-@app.route('/games/update', methods=['PUT'])
+@app.route('/games/<id>', methods=['PUT'])
 @cross_origin(supports_credentials=True)
-def mongo_updateGame():
+def mongo_updateGame(id):
   data = request.json
   data['collection']='games'
-
-  if data is None or data == {} or 'DataToBeUpdated' not in data:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
-                    mimetype='application/json')
+  data['Filter'] = {'gameID': id}
 
   obj1 = MongoAPI(data)
   response = obj1.update()
@@ -179,16 +200,14 @@ def mongo_updateGame():
                   status=200,
                   mimetype='application/json')
 
-@app.route('/games/delete', methods=['DELETE'])
-@cross_origin(supports_credentials=True)
-def mongo_deleteGame():
-  data = request.json
-  data['collection']='games'
 
-  if data is None or data == {} or 'Filter' not in data:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
-                    mimetype='application/json')
+@app.route('/games/<id>', methods=['DELETE'])
+@cross_origin(supports_credentials=True)
+def mongo_deleteGame(id):
+  data = {
+    'collection': 'games',
+    'Filter': {'gameID': id}
+  }
 
   obj1 = MongoAPI(data)
   response = obj1.delete(data)
@@ -196,56 +215,61 @@ def mongo_deleteGame():
                   status=200,
                   mimetype='application/json')
 
-@app.route('/users/all', methods=['POST'])
-@cross_origin(supports_credentials=True)
-def mongo_readAllUsers():
-  data = request.json
-  data['collection']='users'
 
-  if data is None or data == {}:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
-                    mimetype='application/json')
+@app.route('/players')
+@cross_origin(supports_credentials=True)
+def mongo_readAllPlayers():
+  data = {
+    'collection': 'players'
+  }
 
   obj1 = MongoAPI(data)
-  response = obj1.readAllUsers()
+  response = obj1.readAll()
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
 
-@app.route('/users/get', methods=['POST'])
-@cross_origin(supports_credentials=True)
-def mongo_readUser():
-  data = request.json
-  data['collection']='users'
 
-  if data is None or data == {}:
-    return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
-                    mimetype='application/json')
+@app.route('/players/<id>')
+@cross_origin(supports_credentials=True)
+def mongo_readPlayer(id):
+  data = {
+    'collection': 'players',
+    'Filter': {'ID': id}
+  }
 
   obj1 = MongoAPI(data)
-  response = obj1.readUser()
+  response = obj1.readOne()
   return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
 
-@app.route('/users/create', methods=['POST'])
+
+@app.route('/players', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def mongo_createUser():
     data = request.json
-    data['collection']='users'
+    data['collection']='players'
 
-    if data is None or data == {}:
-        return Response(response=json.dumps({"Error": "Please provide connection information"}),
-                    status=400,
-                    mimetype='application/json')
-
-    data['Document']['userName'] = 'Jean-Eudes'
-    data['Document']['userGameIDs'] = []
+    data['Document']['ID'] = str(uuid.uuid4())
     obj1 = MongoAPI(data)
-    response = obj1.createUser(data)
+    response = obj1.create(data)
     return Response(response=json.dumps(response),
+                  status=200,
+                  mimetype='application/json')
+
+
+@app.route('/players/<id>', methods=['DELETE'])
+@cross_origin(supports_credentials=True)
+def mongo_deletePlayer(id):
+  data = {
+    'collection': 'players',
+    'Filter': {'ID': id}
+  }
+
+  obj1 = MongoAPI(data)
+  response = obj1.delete(data)
+  return Response(response=json.dumps(response),
                   status=200,
                   mimetype='application/json')
 ### SocketIO
@@ -260,15 +284,17 @@ def background_thread():
                       {'data': 'Server generated event', 'count': count})
 
 
-@app.route('/')
-@cross_origin(supports_credentials=True)
-def index():
-    return render_template('index.html', async_mode=socketio.async_mode)
+# @app.route('/')
+# @cross_origin(supports_credentials=True)
+# def index():
+#     app.logger.info('GET /index')
+#     return render_template('index.html', async_mode=socketio.async_mode)
 
-@app.route('/test')
-@cross_origin(supports_credentials=True)
-def test():
-    return render_template('test.html', async_mode=socketio.async_mode)
+# @app.route('/test')
+# @cross_origin(supports_credentials=True)
+# def test():
+#     app.logger.info('GET /test')
+#     return render_template('test.html', async_mode=socketio.async_mode)
 
 @socketio.event
 def my_event(message):
@@ -309,6 +335,7 @@ def leave(message):
 
 @socketio.on('close_room')
 def on_close_room(message):
+    app.logger.info('on_close_room:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.',
                          'count': session['receive_count']},
@@ -318,18 +345,22 @@ def on_close_room(message):
 
 @socketio.event
 def my_room_event(message):
+    app.logger.info('my_room_event:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
          {'data': message['data'], 'count': session['receive_count']},
          to=message['room'])
 
+
 @socketio.event
 def what_are_my_rooms():
+    app.logger.info('what_are_my_rooms:' + ', '.join(rooms()))
     emit('my_rooms', {'data': 'In rooms: ' + ', '.join(rooms())})
 
 
 @socketio.event
 def disconnect_request():
+    app.logger.info('disconnect_request')
     @copy_current_request_context
     def can_disconnect():
         disconnect()
@@ -349,7 +380,38 @@ def my_ping():
 
 
 @socketio.event
+def playerJoin(player):
+    app.logger.info('playerJoin')
+    emit(
+      'gameUpdate',
+      {'event': 'playerJoin', 'playerID': player.id},
+      to=player['room']
+    )
+
+
+@socketio.event
+def playerLeave(player):
+    app.logger.info('playerLeave')
+    emit(
+      'gameUpdate',
+      {'event': 'playerLeave','playerID': player.id},
+      to=player['room']
+    )
+
+
+@socketio.event
+def moveSubmit(move):
+    app.logger.info('moveSubmit')
+    emit(
+      'gameUpdate',
+      {'event': 'moveSubmit', 'playerID': move.playerID},
+      to=move['room']
+    )
+
+
+@socketio.event
 def connect():
+    app.logger.info('connect')
     global thread
     with thread_lock:
         if thread is None:
