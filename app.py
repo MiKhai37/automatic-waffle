@@ -3,7 +3,6 @@ from flask import Flask, make_response, render_template, session, request, \
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 from flask_cors import CORS, cross_origin
-# from flask_session import Session
 from MongoAPI import MongoAPI
 import uuid
 from threading import Lock
@@ -18,6 +17,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'not_very_secret!'
 CORS(app, support_credentials=True)
 
+# TODO: handle flask session, mongodb implementatino bug (try to use collection.update)
+# from flask_session import Session
 # app.config['SESSION_TYPE'] = 'filesystem'
 # app.config['SESSION_PERMANENT'] = False
 # app.config['SESSION_USE_SIGNER'] = True
@@ -27,7 +28,7 @@ CORS(app, support_credentials=True)
 
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
-app.logger.setLevel(gunicorn_logger.level)
+app.logger.setLevel(logging.DEBUG)
 
 socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins="*")
 thread = None
@@ -37,19 +38,19 @@ thread_lock = Lock()
 # games played, games won, game lost,
 # highiest score, messages, challenge other user...)
 
-
 @app.before_request
-def hook():
-    # Middleware invoke before each request
-    app.logger.info(f"Request Info: endpoint: {request.method} \
-        {request.endpoint}, url: {request.path}, path: {request.path}")
-
+def isAuthentificated():
+    if False:
+        return Response(response=json.dumps({'err': True, 'errMsg': 'You are unauthentificated'}),
+                        status=403,
+                        mimetype='application/jsons')
+    app.logger.debug(f"Request Info: endpoint: {request.method} {request.endpoint}")
 
 @app.route('/', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def index():
     """Get backend server status"""
-    app.logger.info('GET 200 /index')
+    app.logger.debug('GET 200 /index')
     session['key'] = 'value'
     return render_template('index.html')
 
@@ -69,7 +70,7 @@ def getPlayers():
     playersApi = MongoAPI('players')
     playerDocs = playersApi.readMany()
 
-    app.logger.info(f"GET 200 /players, count: {len(playerDocs)}")
+    app.logger.debug(f"GET 200 /players, count: {len(playerDocs)}")
     return Response(response=json.dumps(playerDocs),
                     status=200,
                     mimetype='application/json')
@@ -81,6 +82,7 @@ def postPlayer():
     """Create a new player, by inserting a new document in players collection"""
     reqProps = ['pseudo']
     newDoc = request.json
+    newDoc['createdAt'] = datetime.utcnow()
 
     if not all (prop in newDoc for prop in reqProps):
         app.logger.error(f"POST 404 /player, Missing properties, {reqProps}")
@@ -93,7 +95,7 @@ def postPlayer():
     playersApi = MongoAPI('players')
     playerDoc = playersApi.create(newDoc)
 
-    app.logger.info(f"POST 201 /player,New Document Successfully Inserted, ID: {playerDoc['id']}")
+    app.logger.debug(f"POST 201 /player,New Document Successfully Inserted, ID: {playerDoc['id']}")
     return Response(response=json.dumps(playerDoc),
                   status=201,
                   mimetype='application/json')
@@ -123,7 +125,7 @@ def getOrDeletePlayer(playerID):
                         status=404,
                         mimetype='application/json')
 
-        app.logger.info(f"GET 200 /player/{playerID}, pseudo: {playerDoc['pseudo']}")
+        app.logger.debug(f"GET 200 /player/{playerID}, pseudo: {playerDoc['pseudo']}")
         return Response(response=json.dumps(playerDoc),
                         status=200,
                         mimetype='application/json')
@@ -138,7 +140,7 @@ def getOrDeletePlayer(playerID):
 
         deletePlayerResult = playersApi.delete({'id': playerID})
 
-        app.logger.info(f"DELETE {deletePlayerResult['Code']} /player/{playerID}, Player {deletePlayerResult['Status']}")
+        app.logger.debug(f"DELETE {deletePlayerResult['Code']} /player/{playerID}, Player {deletePlayerResult['Status']}")
         return Response(response=json.dumps(deletePlayerResult),
                         status=deletePlayerResult['Code'],
                         mimetype='application/json')
@@ -182,7 +184,7 @@ def playerJoin():
 
     players.append(playerDoc)
     updateResult = infosApi.update(filt={'id': gameID}, dataToBeUpdated={'players': players})
-    app.logger.info(f"PUT 200 /player/join, Player {playerID} joins the game {gameID}")
+    app.logger.debug(f"PUT 200 /player/join, Player {playerID} joins the game {gameID}")
     return Response(response=json.dumps(updateResult),
         status=200,
         mimetype='application/json')
@@ -197,6 +199,7 @@ def playerLeave():
 
     infosApi = MongoAPI('infos')
     infoDoc = infosApi.readOne({'id': gameID})
+
     
     if (infoDoc.get('Code') == 404):
         app.logger.error(f"PUT 404 /player/leave, Game not found")
@@ -219,7 +222,7 @@ def playerLeave():
     # player = [player for player in players if player['id'] == playerID][0] # Or .pop() instead of [0]
     players.remove(player)
     updateInfoResult = infosApi.update(filt={'id': gameID}, dataToBeUpdated={'players': players})
-    app.logger.info(f"PUT 200 /player/leave, Player {playerID} leaves the game {gameID}")
+    app.logger.debug(f"PUT 200 /player/leave, Player {playerID} leaves the game {gameID}")
     return Response(response=json.dumps(updateInfoResult),
         status=200,
         mimetype='application/json')
@@ -233,7 +236,7 @@ def getGames():
     infosApi = MongoAPI('infos')
     infoDocs = infosApi.readMany()
 
-    app.logger.info(f'GET 200 /games, count: {len(infoDocs)}')
+    app.logger.debug(f'GET 200 /games, count: {len(infoDocs)}')
     return Response(response=json.dumps(infoDocs),
                     status=200,
                     mimetype='application/json')
@@ -244,6 +247,7 @@ def getGames():
 def postGame():
     """Create a new game, by inserting a new document in gameInfos collection"""
     newInfoDoc = request.json
+    newInfoDoc['createdAt'] = datetime.utcnow()
 
     playersApi = MongoAPI('players')
     creatorPlayerDoc = playersApi.readOne({'id': newInfoDoc['creatorID']})
@@ -263,7 +267,7 @@ def postGame():
     infosApi = MongoAPI('infos')
     gameInfo = infosApi.create(newInfoDoc)
     
-    app.logger.info(f"POST 201 /game, New Document Successfully Inserted, ID: {newInfoDoc['id']}")
+    app.logger.debug(f"POST 201 /game, New Document Successfully Inserted, ID: {newInfoDoc['id']}")
     return Response(response=json.dumps(gameInfo),
                     status=201,
                     mimetype='application/json')
@@ -294,7 +298,7 @@ def getOrDeleteGame(gameID):
                         status=404,
                         mimetype='application/json')
 
-        app.logger.info(f"GET 200 /game/{gameID}, name: {infoDoc['name']}")
+        app.logger.debug(f"GET 200 /game/{gameID}, name: {infoDoc['name']}")
         return Response(response=json.dumps(infoDoc),
                         status=200,
                         mimetype='application/json')
@@ -310,47 +314,93 @@ def getOrDeleteGame(gameID):
         infosApi = MongoAPI('infos')
         deleteGameResult = infosApi.delete({'id': gameID})
 
-        app.logger.info(f"DELETE {deleteGameResult['Code']} /game/{gameID}, Game {deleteGameResult['Status']}")
+        app.logger.debug(f"DELETE {deleteGameResult['Code']} /game/{gameID}, Game {deleteGameResult['Status']}")
         return Response(response=json.dumps(deleteGameResult),
                         status=deleteGameResult['Code'],
                         mimetype='application/json')
 
 
-# @app.route('/play/move', methods=['PUT'])
-# @cross_origin(supports_credentials=True)
-# def mongo_updateGame(gameID):
-#     app.logger.info(f"PUT 200 /games/{gameID}")
-#     data = request.json
-#     data['collection']='games'
-#     data['Filter'] = {'gameID': gameID}
+@app.route('/play/submit', methods=['PUT'])
+@cross_origin(supports_credentials=True)
+def playSubmit():
+    data = request.json
 
-#     obj1 = MongoAPI('tiles')
-#     response = obj1.update()
-#     return Response(response=json.dumps(response),
-#                     status=200,
-#                     mimetype='application/json')
-def createPurse():
+    playerID = data['playerID']
+    gameID = data['gameID']
+
+    infosApi = MongoAPI('infos')
+    tilesApi = MongoAPI('tiles')
+    infosDoc = infosApi.readOne({'gameID': data['gameID']})
+    tilesDoc = tilesApi.readOne({'gameID': data['gameID']})
+
+    if infosDoc.get('Code') == None:
+        app.logger.error(f"PUT 404 /play/submit, Game not found")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
+                    status=404,
+                    mimetype='application/json')
+
+    if tilesDoc.get('Code') == None:
+        app.logger.error(f"PUT 404 /play/submit, Game not found")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
+                    status=404,
+                    mimetype='application/json')
+
+
+    infosUpdateResult = infosApi.update({'id': gameID}, {})
+    tilesUpdateResult = tilesApi.update({'gameID': gameID}, {})
+    # 404 verification
+    # legality verification
+    # Update tiles document
+    # Draw a new tile
+
+    app.logger.debug(f"PUT 200 /play/submit")
+    return Response(response=json.dumps({'status': 'OK'}),
+                    status=200,
+                    mimetype='application/json')
+
+
+def createInitialPurse():
     purse = []
     return purse
 
-def getInitialTiles(purse, nbTiles=7):
-    # copy purse to avoid parms mutation, Clean Code
+
+def drawInitialTiles(purse: list, nbTiles=7):
+    # copy purse to avoid mutation, Clean Code
     purseCopy = purse.copy()
     tiles = [{'letter': random.choice(string.ascii_uppercase), 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': {'place': 'rack', 'coords': i}} for i in range(nbTiles)]
     return tiles, purseCopy
 
+
+def createInitialPurseAndRacks(initialPurse, players, nbTiles=7):
+    purse = initialPurse.copy()
+    shuffledPurse = purse.shuffle()
+    # suffle, better than random pop
+    nbPlayers = len(players)
+    pass
 
 @app.route('/play/start', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def startGame():
     """Start the game, by updating its infoGame document, and creating a gameTiles documents"""
     gameID = request.json['gameID']
+    playerID = request.json['playerID']
+    
     infosApi = MongoAPI('infos')
     infoDoc = infosApi.readOne({'id': gameID})
+    infoDoc['startedAt'] = datetime.utcnow()
+
+    # 404
     if (infoDoc.get('Code') == 404):
         app.logger.error(f"POST 404 /play/start, Game not found")
         return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
                         status=404,
+                        mimetype='application/json')
+    
+    # 403
+    if (infoDoc['creatorID'] != playerID):
+        app.logger.error(f"POST 403 /play/start, Only creator can start the game")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Only creator can start the game'}),
+                        status=403,
                         mimetype='application/json')
 
 
@@ -386,10 +436,10 @@ def startGame():
     # Put the updated infoDoc to update
     infosApi.update({'id': gameID}, infoDoc)
 
-    purse = createPurse()
+    purse = createInitialPurse()
     racks = []
     for player in infoDoc['players']:
-        tiles, purse = getInitialTiles(purse, nbTiles=infoDoc['tilesPerRack'])
+        tiles, purse = drawInitialTiles(purse, nbTiles=infoDoc['tilesPerRack'])
         racks.append({'playerID': player['id'], 'tiles': tiles})
     
     newTileDoc = {'gameID': gameID, 'board': [], 'racks': racks, 'purse': purse}
@@ -397,7 +447,7 @@ def startGame():
     # Post the new tileDoc
     gameTilesDoc = tilesApi.create(newTileDoc)
 
-    app.logger.info(f"POST 201 /play/start, Game has been started")
+    app.logger.debug(f"POST 201 /play/start, Game has been started")
     return Response(response=json.dumps(gameTilesDoc),
                     status=201,
                     mimetype='application/json')
@@ -436,6 +486,7 @@ def giveupGame():
     winner = "player with highest score"
 
     updateInfoDoc = {
+        'stoppedAt': datetime.utcnow(),
         'state': 'finished',
         'finishCause': f'Give Up by {playerID}',
         'winner': winner
@@ -447,7 +498,7 @@ def giveupGame():
     # Update the info document
     updateInfoResult = infosApi.update({'id': gameID}, updateInfoDoc)
 
-    app.logger.info(f"PUT 200 /play/giveup, {playerID} give up")
+    app.logger.debug(f"PUT 200 /play/giveup, {playerID} give up")
     return Response(response=json.dumps(updateInfoResult),
                     status=200,
                     mimetype='application/json')
@@ -460,8 +511,8 @@ def getTiles(gameID, playerID):
     tilesApi = MongoAPI('tiles')
     tilesDoc = tilesApi.readOne({'gameID': gameID})
     if (tilesDoc.get('Code') == 404):
-        app.logger.error(f"GET 404 /tile/{gameID}/{playerID}, Game not found")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
+        app.logger.error(f"GET 404 /tile/{gameID}/{playerID}, Game not found or unstarted")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found or unstarted'}),
                         status=404,
                         mimetype='application/json')
 
@@ -477,7 +528,7 @@ def getTiles(gameID, playerID):
 
     board = tilesDoc['board']
 
-    app.logger.info(f"GET 200 /tile/{gameID}/{playerID}, Tiles success")
+    app.logger.debug(f"GET 200 /tile/{gameID}/{playerID}, Tiles success")
     return Response(response=json.dumps({'rack': rack, 'board': board}),
                     status=200,
                     mimetype='application/json')
@@ -490,19 +541,19 @@ def getBoardTiles(gameID):
     tilesApi = MongoAPI('tiles')
     tilesDoc = tilesApi.readOne({'gameID': gameID})
     if (tilesDoc.get('Code') == 404):
-        app.logger.error(f"GET 404 /tiles/board/{gameID}, Game not found")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
+        app.logger.error(f"GET 404 /tiles/board/{gameID}, Game not found ou unstarted")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found or unstarted'}),
                         status=404,
                         mimetype='application/json')
 
     board = tilesDoc['board']
 
-    app.logger.info(f"GET 200 /tiles/board/{gameID}, Tiles success")
+    app.logger.debug(f"GET 200 /tiles/board/{gameID}, Tiles success")
     return Response(response=json.dumps(board),
                     status=200,
                     mimetype='application/json')
 
-
+# Useful ?
 @app.route('/tile/player/<gameID>/<playerID>', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def getPlayerTiles(gameID, playerID):
@@ -510,8 +561,8 @@ def getPlayerTiles(gameID, playerID):
     tilesApi = MongoAPI('tiles')
     tilesDoc = tilesApi.readOne({'gameID': gameID})
     if (tilesDoc.get('Code') == 404):
-        app.logger.error(f"GET 404 /tile/player/{gameID}/{playerID}, Game not found")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
+        app.logger.error(f"GET 404 /tile/player/{gameID}/{playerID}, Game not found or unstarted")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found or unstarted'}),
                         status=404,
                         mimetype='application/json')
 
@@ -525,7 +576,7 @@ def getPlayerTiles(gameID, playerID):
                         status=404,
                         mimetype='application/json')
 
-    app.logger.info(f"GET 200 /tile/player/{gameID}/{playerID}, Tiles success")
+    app.logger.debug(f"GET 200 /tile/player/{gameID}/{playerID}, Tiles success")
     return Response(response=json.dumps(rack),
                     status=200,
                     mimetype='application/json')
@@ -549,7 +600,7 @@ def testSocket():
 
 @socketio.event
 def my_event(message):
-    app.logger.info('my_event:' + json.dumps(message))
+    app.logger.debug('SOCKETIO my_event:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
         {
@@ -561,7 +612,7 @@ def my_event(message):
 
 @socketio.event
 def my_broadcast_event(message):
-    app.logger.info('my_broadcast_event:' + json.dumps(message))
+    app.logger.debug('SOCKETIO my_broadcast_event:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
         {'data': message['data'],
@@ -572,7 +623,7 @@ def my_broadcast_event(message):
 
 @socketio.event
 def join(message):
-    app.logger.info('join:' + json.dumps(message))
+    app.logger.debug('SOCKETIO join:' + json.dumps(message))
     join_room(message['room'])
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
@@ -582,7 +633,7 @@ def join(message):
 
 @socketio.event
 def leave(message):
-    app.logger.info('leave:' + json.dumps(message))
+    app.logger.debug('SOCKETIO leave:' + json.dumps(message))
     leave_room(message['room'])
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
@@ -592,7 +643,7 @@ def leave(message):
 
 @socketio.on('close_room')
 def on_close_room(message):
-    app.logger.info('on_close_room:' + json.dumps(message))
+    app.logger.debug('SOCKETIO on_close_room:' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.',
                          'count': session['receive_count']},
@@ -602,7 +653,7 @@ def on_close_room(message):
 
 @socketio.event
 def my_room_event(message):
-    app.logger.info('my_room_event: ' + json.dumps(message))
+    app.logger.debug('SOCKETIO my_room_event: ' + json.dumps(message))
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response',
          {'data': message['data'], 'count': session['receive_count']},
@@ -611,13 +662,13 @@ def my_room_event(message):
 
 @socketio.event
 def what_are_my_rooms():
-    app.logger.info('what_are_my_rooms:' + ', '.join(rooms()))
+    app.logger.debug('SOCKETIO what_are_my_rooms:' + ', '.join(rooms()))
     emit('my_rooms', {'data': 'In rooms: ' + ', '.join(rooms())})
 
 
 @socketio.event
 def disconnect_request():
-    app.logger.info('disconnect_request')
+    app.logger.debug('SOCKETIO disconnect_request')
 
     @copy_current_request_context
     def can_disconnect():
@@ -639,37 +690,43 @@ def my_ping():
 
 @socketio.event
 def playerJoinEvent(message):
-    app.logger.info('playerJoin: ' + json.dumps(message))
+    app.logger.debug('SOCKETIO playerJoin: ' + json.dumps(message))
     emit(
       'infoUpdate',
       {'event': 'playerJoin', 'playerID': message['playerID']},
-      to=message['game']
+      to=message['room']
     )
 
 
 @socketio.event
 def playerLeaveEvent(message):
-    app.logger.info('playerLeave: ' + json.dumps(message))
+    app.logger.debug('SOCKETIO playerLeave: ' + json.dumps(message))
     emit(
       'infoUpdate',
       {'event': 'playerLeave', 'playerID': message['playerID']},
-      to=message['game']
+      to=message['room']
     )
 
 
 @socketio.event
+def gameStartEvent(message):
+    app.logger.debug('SOCKETIO gameStart:' + json.dumps(message))
+    emit('infoUpdate', {'event': 'gameStart'}, to=message['room'])
+
+
+@socketio.event
 def moveSubmit(message):
-    app.logger.info('moveSubmit: ' + json.dumps(message))
+    app.logger.debug('SOCKETIO moveSubmit: ' + json.dumps(message))
     emit(
       'gameUpdate',
       {'event': 'moveSubmit', 'playerID': message['playerID']},
-      to=message['game']
+      to=message['room']
     )
 
 
 @socketio.event
 def connect():
-    app.logger.info('connect')
+    app.logger.debug('SOCKETIO connect')
     global thread
     with thread_lock:
         if thread is None:
@@ -679,12 +736,12 @@ def connect():
 
 @socketio.on('connect')
 def test_connection():
-    app.logger.info('Client connected: ' + request.sid)
+    app.logger.debug('SOCKETIO Client connected: ' + request.sid)
 
 
 @socketio.on('disconnect')
 def test_disconnect():
-    app.logger.info('Client disconnected: ' + request.sid)
+    app.logger.debug('SOCKETIO Client disconnected: ' + request.sid)
 
 
 if __name__ == '__main__':
