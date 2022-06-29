@@ -70,7 +70,20 @@ def getPlayers():
     playersApi = MongoAPI('players')
     playerDocs = playersApi.readMany()
 
-    app.logger.debug(f"GET 200 /players, count: {len(playerDocs)}")
+    app.logger.debug(f"GET 200 /player, count: {len(playerDocs)}")
+    return Response(response=json.dumps(playerDocs),
+                    status=200,
+                    mimetype='application/json')
+
+# TODO:
+@app.route('/player/search', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def searchPlayers():
+    """Get all players documents matching query parameters"""
+    playersApi = MongoAPI('players')
+    playerDocs = playersApi.readMany(filt={})
+
+    app.logger.debug(f"GET 200 /player, count: {len(playerDocs)}")
     return Response(response=json.dumps(playerDocs),
                     status=200,
                     mimetype='application/json')
@@ -182,7 +195,9 @@ def playerJoin():
                     status=403,
                     mimetype='application/json')
 
+    playerDoc.pop('createdAt', None)
     players.append(playerDoc)
+
     updateResult = infosApi.update(filt={'id': gameID}, dataToBeUpdated={'players': players})
     app.logger.debug(f"PUT 200 /player/join, Player {playerID} joins the game {gameID}")
     return Response(response=json.dumps(updateResult),
@@ -242,6 +257,20 @@ def getGames():
                     mimetype='application/json')
 
 
+# TODO:
+@app.route('/game/search', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def searchGames():
+    """Get all infos documents matching query parameters"""
+    infoApi = MongoAPI('infos')
+    infoDocs = infoApi.readMany(filt={})
+
+    app.logger.debug(f"GET 200 /player, count: {len(infoDocs)}")
+    return Response(response=json.dumps(infoDocs),
+                    status=200,
+                    mimetype='application/json')
+
+
 @app.route('/game', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def postGame():
@@ -259,6 +288,8 @@ def postGame():
 
 
     newInfoDoc['id'] = str(uuid.uuid4())
+
+    creatorPlayerDoc.pop('createdAt', None)
     newInfoDoc['players'] = [creatorPlayerDoc]
     newInfoDoc['state'] = 'unstarted'
     newInfoDoc['tilesPerRack'] = 7
@@ -358,25 +389,42 @@ def playSubmit():
                     status=200,
                     mimetype='application/json')
 
+# TODO: Game logic to move in another pyfile
+frLettersDistribution = [['*', 2, 0], ['E', 16, 1], ['A', 9, 1], ['I', 8, 1], ['D', 6, 1], ['N', 8, 1], ['O', 6, 1], ['R', 6, 1], ['S', 6, 1], ['T', 6, 1], ['G', 4, 2], [
+        'H', 3, 2], ['L', 3, 2], ['K', 3, 3], ['W', 3, 3], ['M', 2, 4], ['U', 2, 4], ['Y', 2, 4], ['P', 2, 5], ['V', 2, 5], ['B', 1, 8], ['F', 1, 8], ['J', 1, 10]]
 
-def createInitialPurse():
-    purse = []
-    return purse
+def createInitialPurse(lettersDistribution):
+    initialPurse = []
+    for letter in lettersDistribution:
+        initialPurse += [{'letter': letter[0], 'point': letter[2],'id': str(uuid.uuid4())} for _ in range(letter[1])]
+
+    return initialPurse
 
 
-def drawInitialTiles(purse: list, nbTiles=7):
-    # copy purse to avoid mutation, Clean Code
-    purseCopy = purse.copy()
-    tiles = [{'letter': random.choice(string.ascii_uppercase), 'isSelected': False, 'id': str(uuid.uuid4()), 'isLocked': False, 'location': {'place': 'rack', 'coords': i}} for i in range(nbTiles)]
-    return tiles, purseCopy
-
-
-def createInitialPurseAndRacks(initialPurse, players, nbTiles=7):
+def drawInitialRacksAndPurse(initialPurse: list, players, tilesPerRack):
+    # clean code, not parameter mutations
     purse = initialPurse.copy()
-    shuffledPurse = purse.shuffle()
-    # suffle, better than random pop
-    nbPlayers = len(players)
-    pass
+    # better to shuffle the purse once and pop tile from the end, than to pop tile from random index
+    random.shuffle(purse)
+
+    racks = []
+    for player in players:
+        tiles = []
+        for i in range(tilesPerRack):
+            tile = purse.pop()
+            tile['isSelected'] = False
+            tile['isLocked'] = False
+            tile['location'] = {'place': 'rack', 'coords': i}
+            tiles.append(tile)
+        racks.append({'playerID': player['id'], 'tiles': tiles})
+
+    return purse, racks
+
+def drawTile(purse):
+    # clean code, no parameter mutations
+    purseCopy = purse.copy()
+    tile = purseCopy.pop()
+    return purseCopy, tile
 
 @app.route('/play/start', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -384,7 +432,7 @@ def startGame():
     """Start the game, by updating its infoGame document, and creating a gameTiles documents"""
     gameID = request.json['gameID']
     playerID = request.json['playerID']
-    
+
     infosApi = MongoAPI('infos')
     infoDoc = infosApi.readOne({'id': gameID})
     infoDoc['startedAt'] = datetime.utcnow()
@@ -405,9 +453,9 @@ def startGame():
 
 
     # Avoid duplicate start operations
-    if (infoDoc['state'] == 'running'):
-        app.logger.error(f"POST 403 /play/start, Game is already running")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Game is already running'}),
+    if (infoDoc['state'] != 'unstarted'):
+        app.logger.error(f"POST 403 /play/start, Game is already running, or finished")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game is already running, or finished'}),
                         status=403,
                         mimetype='application/json')
     
@@ -425,7 +473,7 @@ def startGame():
 
 
     # Updating the values of infoDoc
-    # Note: The for loop mutates the player item of the players array in infoDoc
+    # Note: The for loop mutates the player item in the players array in infoDoc
     for player in infoDoc['players']:
         player['score'] = 0
 
@@ -433,14 +481,14 @@ def startGame():
     infoDoc['state'] = 'running'
     infoDoc['turnOffset'] = random.randint(0,len(infoDoc['players']))
 
+    playerIds = list(map(lambda player: player['id'], infoDoc['players']))
+    infoDoc['turnPlayerId'] = playerIds[infoDoc['turn'] % infoDoc['nbPlayers']]
+
     # Put the updated infoDoc to update
     infosApi.update({'id': gameID}, infoDoc)
 
-    purse = createInitialPurse()
-    racks = []
-    for player in infoDoc['players']:
-        tiles, purse = drawInitialTiles(purse, nbTiles=infoDoc['tilesPerRack'])
-        racks.append({'playerID': player['id'], 'tiles': tiles})
+    initialPurse = createInitialPurse(frLettersDistribution)
+    purse, racks = drawInitialRacksAndPurse(initialPurse, infoDoc['players'], infoDoc['tilesPerRack'])
     
     newTileDoc = {'gameID': gameID, 'board': [], 'racks': racks, 'purse': purse}
 
@@ -500,6 +548,19 @@ def giveupGame():
 
     app.logger.debug(f"PUT 200 /play/giveup, {playerID} give up")
     return Response(response=json.dumps(updateInfoResult),
+                    status=200,
+                    mimetype='application/json')
+
+# TODO: secure this route
+@app.route('/tile', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def getAllTiles():
+    """Returns all tiles documents"""
+    tilesApi = MongoAPI('tiles')
+    tilesDocs = tilesApi.readMany()
+
+    app.logger.debug(f"GET 200 /tile, count: {len(tilesDocs)}")
+    return Response(response=json.dumps(tilesDocs),
                     status=200,
                     mimetype='application/json')
 
