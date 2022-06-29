@@ -8,7 +8,6 @@ import uuid
 from threading import Lock
 import logging
 from datetime import datetime
-import string
 import random
 
 async_mode = None
@@ -93,13 +92,13 @@ def searchPlayers():
 @cross_origin(supports_credentials=True)
 def postPlayer():
     """Create a new player, by inserting a new document in players collection"""
-    reqProps = ['pseudo']
+    required = ['pseudo']
     newDoc = request.json
     newDoc['createdAt'] = datetime.utcnow()
 
-    if not all (prop in newDoc for prop in reqProps):
-        app.logger.error(f"POST 404 /player, Missing properties, {reqProps}")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Required property(ies) in body request is(are) missing' ,'reqProps': reqProps}),
+    if not all (prop in newDoc for prop in required):
+        app.logger.error(f"POST 404 /player, Missing properties, {required}")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Required property(ies) in body request is(are) missing' ,'reqProps': required}),
                         status=400,
                         mimetype='application/json')
 
@@ -275,25 +274,45 @@ def searchGames():
 @cross_origin(supports_credentials=True)
 def postGame():
     """Create a new game, by inserting a new document in gameInfos collection"""
-    newInfoDoc = request.json
-    newInfoDoc['createdAt'] = datetime.utcnow()
+    data = request.json
+
+    required = ['creatorID', 'name', 'nbPlayers']
+
+    if not all (prop in data for prop in required):
+        app.logger.error(f"POST 404 /game, Missing properties, {required}")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Required property(ies) in body request is(are) missing' ,'required': required}),
+                        status=400,
+                        mimetype='application/json')
+
+    creatorID = data.get('creatorID')
+    name = data.get('name')
+    nbPlayers = data.get('nbPlayers')
+
 
     playersApi = MongoAPI('players')
-    creatorPlayerDoc = playersApi.readOne({'id': newInfoDoc['creatorID']})
+    creatorPlayerDoc = playersApi.readOne({'id': creatorID})
+
     if creatorPlayerDoc.get('Code') == 404:
         app.logger.error(f"POST 404 /game, Creator not found")
         return Response(response=json.dumps({'err': True, 'errMsg': "Creator not found"}),
                         status=404,
                         mimetype='application/json')
 
-
-    newInfoDoc['id'] = str(uuid.uuid4())
-
     creatorPlayerDoc.pop('createdAt', None)
+
+    newInfoDoc = {}
+
+    newInfoDoc['creatorID'] = creatorID
+    newInfoDoc['name'] = name
+    newInfoDoc['nbPlayers'] = nbPlayers
+
+    newInfoDoc['createdAt'] = datetime.utcnow()
+    newInfoDoc['id'] = str(uuid.uuid4())
     newInfoDoc['players'] = [creatorPlayerDoc]
     newInfoDoc['state'] = 'unstarted'
-    newInfoDoc['tilesPerRack'] = 7
-    newInfoDoc['gridSize'] = 15
+
+    newInfoDoc['tilesPerRack'] = data.get('tilesPerRack', 7)
+    newInfoDoc['gridSize'] = data.get('gridSize', 7)
 
     infosApi = MongoAPI('infos')
     gameInfo = infosApi.create(newInfoDoc)
@@ -350,44 +369,6 @@ def getOrDeleteGame(gameID):
                         status=deleteGameResult['Code'],
                         mimetype='application/json')
 
-
-@app.route('/play/submit', methods=['PUT'])
-@cross_origin(supports_credentials=True)
-def playSubmit():
-    data = request.json
-
-    playerID = data['playerID']
-    gameID = data['gameID']
-
-    infosApi = MongoAPI('infos')
-    tilesApi = MongoAPI('tiles')
-    infosDoc = infosApi.readOne({'gameID': data['gameID']})
-    tilesDoc = tilesApi.readOne({'gameID': data['gameID']})
-
-    if infosDoc.get('Code') == None:
-        app.logger.error(f"PUT 404 /play/submit, Game not found")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
-                    status=404,
-                    mimetype='application/json')
-
-    if tilesDoc.get('Code') == None:
-        app.logger.error(f"PUT 404 /play/submit, Game not found")
-        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
-                    status=404,
-                    mimetype='application/json')
-
-
-    infosUpdateResult = infosApi.update({'id': gameID}, {})
-    tilesUpdateResult = tilesApi.update({'gameID': gameID}, {})
-    # 404 verification
-    # legality verification
-    # Update tiles document
-    # Draw a new tile
-
-    app.logger.debug(f"PUT 200 /play/submit")
-    return Response(response=json.dumps({'status': 'OK'}),
-                    status=200,
-                    mimetype='application/json')
 
 # TODO: Game logic to move in another pyfile
 frLettersDistribution = [['*', 2, 0], ['E', 16, 1], ['A', 9, 1], ['I', 8, 1], ['D', 6, 1], ['N', 8, 1], ['O', 6, 1], ['R', 6, 1], ['S', 6, 1], ['T', 6, 1], ['G', 4, 2], [
@@ -482,7 +463,7 @@ def startGame():
     infoDoc['turnOffset'] = random.randint(0,len(infoDoc['players']))
 
     playerIds = list(map(lambda player: player['id'], infoDoc['players']))
-    infoDoc['turnPlayerId'] = playerIds[infoDoc['turn'] % infoDoc['nbPlayers']]
+    infoDoc['turnPlayerId'] = playerIds[(infoDoc['turn'] + infoDoc['turnOffset']) % infoDoc['nbPlayers']]
 
     # Put the updated infoDoc to update
     infosApi.update({'id': gameID}, infoDoc)
@@ -550,6 +531,81 @@ def giveupGame():
     return Response(response=json.dumps(updateInfoResult),
                     status=200,
                     mimetype='application/json')
+
+# TODO: Implement move validity, points counting
+@app.route('/play/submit', methods=['PUT'])
+@cross_origin(supports_credentials=True)
+def playSubmit():
+    data = request.json
+
+    playerID = data['playerID']
+    gameID = data['gameID']
+    submitBoard = data['board']
+    submitRack = data['rack']
+
+    infosApi = MongoAPI('infos')
+    tilesApi = MongoAPI('tiles')
+    infosDoc = infosApi.readOne({'id': gameID})
+
+    if infosDoc.get('Code') == 404:
+        app.logger.error(f"PUT 404 /play/submit, Game not found")
+        return Response(response=json.dumps({'err': True, 'errMsg': 'Game not found'}),
+                    status=404,
+                    mimetype='application/json')
+
+    if infosDoc['state'] != 'running':
+        app.logger.error(f"PUT 403 /play/submit, Game isn't running")
+        return Response(response=json.dumps({'err': True, 'errMsg': "Game isn't running"}),
+                    status=404,
+                    mimetype='application/json')
+
+    tilesDoc = tilesApi.readOne({'gameID': gameID})
+
+    for tile in submitBoard:
+        tile['isSelected'] = False
+        tile['isLocked'] = True
+
+    for tile in submitRack:
+        tile['isSelected'] = False
+
+    indexToNotFill = list(map(lambda tile: tile['location']['coords'], submitRack))
+
+    indexToFill = list(set(range(infosDoc['tilesPerRack'])) - set(indexToNotFill))
+
+    purse = tilesDoc['purse']
+    for i in indexToFill:
+        tile = purse.pop()
+        tile['isSelected'] = False
+        tile['isLocked'] = False
+        tile['location'] = {'place': 'rack', 'coords': i}
+        submitRack.append(tile)
+
+    submitRackBis = {'playerID': playerID, 'tiles': submitRack}
+
+    tilesDoc['board'] = submitBoard
+    tilesDoc['racks'] = list(map(lambda rack: rack if rack['playerID'] != playerID else submitRackBis, tilesDoc['racks']))
+    tilesDoc['purse'] = purse
+
+
+    infosDoc['turn'] = infosDoc['turn'] + 1
+    playerIds = list(map(lambda player: player['id'], infosDoc['players']))
+    infosDoc['turnPlayerId'] = playerIds[(infosDoc['turn'] + infosDoc['turnOffset']) % infosDoc['nbPlayers']]
+
+    for player in infosDoc['players']:
+        if player['id'] == playerID:
+            player['score'] = player['score'] + len(indexToFill)
+
+    infosUpdateResult = infosApi.update({'id': gameID}, infosDoc)
+    tilesUpdateResult = tilesApi.update({'gameID': gameID}, tilesDoc)
+    # legality verification
+    # Update tiles document
+    # Draw a new tile
+
+    app.logger.debug(f"PUT 200 /play/submit")
+    return Response(response=json.dumps({'status': 'OK'}),
+                    status=200,
+                    mimetype='application/json')
+
 
 # TODO: secure this route
 @app.route('/tile', methods=['GET'])
@@ -776,7 +832,7 @@ def gameStartEvent(message):
 
 
 @socketio.event
-def moveSubmit(message):
+def moveSubmitEvent(message):
     app.logger.debug('SOCKETIO moveSubmit: ' + json.dumps(message))
     emit(
       'gameUpdate',
