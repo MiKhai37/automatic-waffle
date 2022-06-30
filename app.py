@@ -825,7 +825,7 @@ def playerJoinEvent(message):
     emit(
       'infoUpdate',
       {'event': 'playerJoin', 'playerID': message['playerID']},
-      to=message['room']
+      to=f"lobby-{message['gameID']}"
     )
 
 
@@ -835,14 +835,14 @@ def playerLeaveEvent(message):
     emit(
       'infoUpdate',
       {'event': 'playerLeave', 'playerID': message['playerID']},
-      to=message['room']
+      to=f"lobby-{message['gameID']}"
     )
 
 
 @socketio.event
 def gameStartEvent(message):
     app.logger.debug('SOCKETIO gameStart:' + json.dumps(message))
-    emit('infoUpdate', {'event': 'gameStart'}, to=message['room'])
+    emit('infoUpdate', {'event': 'gameStart'}, to=f"lobby-{message['gameID']}")
 
 
 @socketio.event
