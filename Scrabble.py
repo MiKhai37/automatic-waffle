@@ -15,7 +15,7 @@ distributionDict = {
 class Scrabble:
     """Scrabble class, define scrabble object and methods"""
     def __init__(self, players, purse={}, racks={}, board={}, gridSize=15, tilesPerRack=7, lang='fr'):
-        if lang != 'fr': raise Exception("Only french language is handled, others are incoming")
+        if lang != 'fr': raise Exception("Only french language is handled for the moment")
         
         self.players = players
         self.nbPlayers = len(players)
@@ -38,40 +38,86 @@ class Scrabble:
     def __str__(self) -> str:
         return f"Scrabble game: {len(self.players)} joueurs, {self.gridSize}*{self.gridSize}"
 
+
     def __createInitialPurse(self):
+        """
+        If scrabble is not initialized (<=> empty board and racks)
+        Return an initial letter purse
+        """
         distribution = distributionDict[self.lang]
         initialPurse = []
         for letter in distribution:
             initialPurse += [{'letter': letter[0], 'point': letter[2],'id': str(uuid.uuid4())} for _ in range(letter[1])]
         
+        # Shuffle once then pop from the end
+        # Better than no shuffling then pop from random index
         random.shuffle(initialPurse)
         return initialPurse
 
+
     def __drawInitialRacks(self):
+        """
+        If scrabble is not initialized (<=> empty board and racks)
+        Return initial players racks
+        """
         racks = []
         for player in self.players:
-            tiles = []
+            rack = []
             for i in range(self.tilesPerRack):
                 tile = self.purse.pop()
                 tile['isSelected'] = False
                 tile['isLocked'] = False
                 tile['location'] = {'place': 'rack', 'coords': i}
-                tiles.append(tile)
-            racks.append({'playerID': player['id'], 'tiles': tiles})
+                rack.append(tile)
+            racks.append({'playerID': player['id'], 'rack': rack})
         self.tilesInPurse = len(self.purse)
         return racks
 
 
-    def drawTile(self):
-        print('public tile')
-        self.__drawTile()
-
-    def __drawTile(self, player):
+    def __drawTile(self, player, nbTiles):
+        """Draw required number of tiles from the purse and return it"""
         tile = self.purse.pop()
         tile['isSelected'] = False
         tile['isLocked'] = False
         tile['location'] = {'place': 'rack', 'coords': 37}
         return tile
+
+
+    def moveSubmit(self, move):
+        """
+        Handle move submission,
+        if legal,
+            save move
+            score points
+            draw tiles
+            return drawn tiles and scored points
+        if illegal,
+            block move
+            return illegal causes
+        """
+        if not self._isLegit(move):
+            return False
+        words = self._findWords(move)
+        points = self._calculateScoredPoints(words)
+        tilesToDraw = 0
+        tiles = self.__drawTile(move, tilesToDraw)
+        return tiles, points
+
+
+    def _isLegit(self, move):
+        """Check for illegal moves, like unlegitmate tile mutation"""
+        return True
+
+    def _findWords(self, move):
+        """Return words created by the move"""
+        words = []
+        return words
+
+    def _calculateScoredPoints(self, words):
+        """Return the points mark by the move"""
+        points = 0
+        return points
+
 
 players = [
   {'id': 'id0', 'pseudo': 'pseudo0'},
