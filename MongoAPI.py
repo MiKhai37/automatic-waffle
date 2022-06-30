@@ -1,52 +1,142 @@
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
-#import logging as log
+import time
 
 load_dotenv()
 DATABASE = os.getenv('DATABASE')
 
+
 class MongoAPI:
-  def __init__(self, collection='ping'):
-    self.client = MongoClient(os.getenv('MONGODB_URI'))
-    self.cursor = self.client[DATABASE]
-    self.collection = self.cursor[collection]
-  
-  def ping(self):
-    output = self.cursor.command('ping')
-    return output
+    """
+    A class to create a connection interface between python and MongoDB
 
+    ```
 
-  def create(self, new_document):
-    self.collection.insert_one(new_document)
-    output = {item: new_document[item] for item in new_document if item != '_id'}
-    output['Status'] = 'New Document Successfully Inserted'
-    return output
+    Attributes
+    ----------
+    uri : str
+        Connection string URI to define the connection between the application and the MongoDB instance
+    dbName : str
+        Name of the database to connect
+    collection : str
+        Name of the document collection, without collection name only ping method is available
 
+    Methods
+    -------
+    ping():
+        Ping the database
 
-  def delete(self, filt):
-    response = self.collection.delete_one(filt)
-    output = { 'Status': 'Document Successfully Deleted', 'Code':204 } if response.deleted_count > 0 else {'Status': 'Document not found', 'Code': 404}
-    return output
+    create(new_document):
+        Insert a new document into the collection
 
+    delete(filt):
+        Delete the first found document matching the filter parameter filt
 
-  def readMany(self, filt={}):
-    documents = self.collection.find(filt)
-    output = [{item: data[item] for item in data if item != '_id'} for data in documents]
-    return output
+    readMany(filt):
+        Find the document matching the filter parameter filt
 
+    readOne(filt):
+        Find the first document matching the filter parameter filt
 
-  def readOne(self, filt):
-    document = self.collection.find_one(filt)
-    if (document == None):
-      return {'Status': 'Document not found', 'Code': 404}
-    output = {item: document[item] for item in document if item != '_id'}
-    return output
-  
+    update(filt, dataToBeUpdate)
+        Update the first document matching the filter parameter filt, with the data in the parameter dataToBeUpdated
+    """
 
-  def update(self, filt, dataToBeUpdated):
-    updated_data = {"$set": dataToBeUpdated}
-    response = self.collection.update_one(filt, updated_data)
-    output = {'Status': 'Document Successfully Updated' if response.modified_count > 0 else "Nothing was updated."}
-    return output
-    
+    def __init__(self, collection=None, uri=os.getenv('MONGODB_URI'), dbName=os.getenv('DATABASE')):
+        self.client = MongoClient(uri)
+        self.cursor = self.client[dbName]
+        if collection != None:
+            self.collection = self.cursor[collection]
+
+    def ping(self):
+        """
+        Just ping the database connected
+
+            Parameters:
+                No parameters
+            Returns:
+                output (dict): JSON object with two data
+                    ok (int): 1 (if anything is ok)
+                    latency(ms) (int): the latency in milliseconds to ping the database
+        """
+        pingTime = time.perf_counter()
+        output = self.cursor.command('ping')
+        pongTime = time.perf_counter()
+        latency = pongTime - pingTime
+        output['latency(ms)'] = int(latency*10**3)
+        return output
+
+    def create(self, new_document: dict):
+        """
+        Insert a new document in the collection
+
+            Parameters:
+                new_document (dict): JSON object defining the document to insert
+            Returns:
+                output (dict): the new document plus a Status data
+        """
+        self.collection.insert_one(new_document)
+        output = {item: new_document[item]
+                  for item in new_document if item != '_id'}
+        output['Status'] = 'New Document Successfully Inserted'
+        return output
+
+    def delete(self, filt):
+        """
+        Delete one document in the collection, the first matching the filter
+
+            Parameters:
+                filt (dict): JSON object defining the filter to applicate
+            Returns
+                output (dict): JSON object to notify the successfulness of the deletion operation 
+        """
+        response = self.collection.delete_one(filt)
+        output = {'Status': 'Document Successfully Deleted', 'Code': 204} if response.deleted_count > 0 else {
+            'Status': 'Document not found', 'Code': 404}
+        return output
+
+    def readMany(self, filt={}):
+        """
+        Find many documents in the collection matching the filter
+
+            Parameters:
+                filt (dict): JSON object defining the filter to applicate
+            Returns
+                output (list): list of JSON objects representing the found documents
+        """
+        documents = self.collection.find(filt)
+        output = [{item: data[item] for item in data if item != '_id'}
+                  for data in documents]
+        return output
+
+    def readOne(self, filt):
+        """
+        Find one document in the collection, the first matching the filter
+
+            Parameters:
+                filt (dict): JSON object defining the filter to applicate
+            Returns
+                output (dict): JSON objects representing the found document
+        """
+        document = self.collection.find_one(filt)
+        if (document == None):
+            return {'Status': 'Document not found', 'Code': 404}
+        output = {item: document[item] for item in document if item != '_id'}
+        return output
+
+    def update(self, filt, dataToBeUpdated):
+        """
+        Update one document in the collection, the first matching the filter
+
+            Parameters:
+                filt (dict): JSON object defining the filter to applicate
+                dataToBeUpdated (dict): JSON object representing the data to be updated
+            Returns
+                output (dict): JSON object to notify the successfulness of the updation operation 
+        """
+        updated_data = {"$set": dataToBeUpdated}
+        response = self.collection.update_one(filt, updated_data)
+        output = {'Status': 'Document Successfully Updated' if response.modified_count >
+                  0 else "Nothing was updated."}
+        return output
