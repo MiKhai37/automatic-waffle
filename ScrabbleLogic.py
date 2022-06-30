@@ -1,5 +1,7 @@
 import random
 import uuid
+from pprint import pprint
+from helpers import createDictionary, createDistribution
 
 frLettersDistribution = [['*', 2, 0], ['E', 16, 1], ['A', 9, 1], ['I', 8, 1], ['D', 6, 1], ['N', 8, 1], ['O', 6, 1], ['R', 6, 1], ['S', 6, 1], ['T', 6, 1], ['G', 4, 2], [
         'H', 3, 2], ['L', 3, 2], ['K', 3, 3], ['W', 3, 3], ['M', 2, 4], ['U', 2, 4], ['Y', 2, 4], ['P', 2, 5], ['V', 2, 5], ['B', 1, 8], ['F', 1, 8], ['J', 1, 10]]
@@ -13,8 +15,11 @@ distributionDict = {
 
 
 class Scrabble:
-    """Scrabble class, define scrabble object and methods"""
-    def __init__(self, players, purse={}, racks={}, board={}, gridSize=15, tilesPerRack=7, lang='fr'):
+    """
+    Scrabble class, define scrabble object and methods
+    """
+    
+    def __init__(self, players, purse=[], racks=[], board=[], gridSize=15, tilesPerRack=7, lang='fr'):
         if lang != 'fr': raise Exception("Only french language is handled for the moment")
         
         self.players = players
@@ -23,10 +28,10 @@ class Scrabble:
         self.tilesPerRack = tilesPerRack
         self.lang = lang
 
-        if board == {}:
+        if board == [] and purse == []:
             self.purse = self.__createInitialPurse()
             self.racks = self.__drawInitialRacks()
-            self.board = {}
+            self.board = []
         else:
             self.purse = purse
             self.racks = racks
@@ -41,8 +46,11 @@ class Scrabble:
 
     def __createInitialPurse(self):
         """
-        If scrabble is not initialized (<=> empty board and racks)
-        Return an initial letter purse
+        Create the inital letter purse
+            Parameters:
+                No
+            Returns:
+                initialPurse (list): list of all tiles representing the starting purse
         """
         distribution = distributionDict[self.lang]
         initialPurse = []
@@ -57,7 +65,7 @@ class Scrabble:
 
     def __drawInitialRacks(self):
         """
-        If scrabble is not initialized (<=> empty board and racks)
+        Draw initial players racks
         Return initial players racks
         """
         racks = []
@@ -124,12 +132,7 @@ players = [
   {'id': 'id1', 'pseudo': 'pseudo1'}
 ]
 
-scrabble = Scrabble('name', players)
+scrabble = Scrabble(players)
 
-print(scrabble)
 print(len(scrabble.purse))
-print(scrabble.racks)
-
-# scrabble.drawTile()
-from pprint import pprint
-print(Scrabble.__dict__)
+pprint(scrabble.racks)

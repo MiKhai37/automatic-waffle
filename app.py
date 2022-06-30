@@ -9,6 +9,7 @@ from threading import Lock
 import logging
 from datetime import datetime
 import random
+from ScrabbleLogic import Scrabble
 
 async_mode = None
 
@@ -487,11 +488,12 @@ def startGame():
     # Put the updated infoDoc to update
     infosApi.update({'id': gameID}, infoDoc)
 
-    initialPurse = createInitialPurse(frLettersDistribution)
-    purse, racks = drawInitialRacksAndPurse(
-        initialPurse, infoDoc['players'], infoDoc['tilesPerRack'])
+    scrabble = Scrabble(players = infoDoc['players'], gridSize=infoDoc['gridSize'], tilesPerRack=infoDoc['tilesPerRack'])
+    racks = scrabble.racks
+    purse = scrabble.purse
+    board = scrabble.board
 
-    newTileDoc = {'gameID': gameID, 'board': [],
+    newTileDoc = {'gameID': gameID, 'board': board,
                   'racks': racks, 'purse': purse}
 
     # Post the new tileDoc
