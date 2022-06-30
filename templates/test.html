@@ -83,10 +83,6 @@
                 socket.emit('disconnect_request');
                 return false;
             });
-            $('form#whoami').submit(function(event) {
-                socket.emit('connecto');
-                return false;
-            });
         });
     </script>
 </head>
@@ -98,10 +94,6 @@
       Average ping/pong latency: <b><span id="ping-pong"></span>ms</b>
     </p>
     <h2>Send:</h2>
-    <form id="whoami" method="POST" action='#'>
-        <input type="text" name="whoami_data" id="whoami_data" placeholder="Whoami">
-        <input type="submit" value="Whoami">
-    </form>
     <form id="emit" method="POST" action='#'>
         <input type="text" name="emit_data" id="emit_data" placeholder="Message">
         <input type="submit" value="Echo">

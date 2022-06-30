@@ -7,11 +7,15 @@ load_dotenv()
 DATABASE = os.getenv('DATABASE')
 
 class MongoAPI:
-  def __init__(self, collection):
+  def __init__(self, collection='ping'):
     self.client = MongoClient(os.getenv('MONGODB_URI'))
     self.cursor = self.client[DATABASE]
     self.collection = self.cursor[collection]
   
+  def ping(self):
+    output = self.cursor.command('ping')
+    return output
+
 
   def create(self, new_document):
     self.collection.insert_one(new_document)

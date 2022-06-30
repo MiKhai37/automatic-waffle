@@ -9,6 +9,7 @@ from threading import Lock
 import logging
 from datetime import datetime
 import random
+import time
 
 async_mode = None
 
@@ -60,6 +61,22 @@ def setCookie():
     resp = make_response('The cookie has been set')
     resp.set_cookie('TestCookie', 'TestValue')
     return resp
+
+
+@app.route('/ping', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def pingMongoDB():
+    """
+    Ping the current MongoDB Client,
+    return the output plus its duration in milliseconds
+    """
+    pingTime = time.perf_counter()
+    pingApi = MongoAPI()
+    pingResponse = pingApi.ping()
+    pongTime = time.perf_counter()
+    pingResponse['time'] = int((pongTime - pingTime)*10**3)
+    app.logger.debug(f"GET 200 /ping, {json.dumps(pingResponse)}")
+    return Response(response=json.dumps(pingResponse))
 
 
 @app.route('/player', methods=['GET'])
@@ -597,9 +614,6 @@ def playSubmit():
 
     infosUpdateResult = infosApi.update({'id': gameID}, infosDoc)
     tilesUpdateResult = tilesApi.update({'gameID': gameID}, tilesDoc)
-    # legality verification
-    # Update tiles document
-    # Draw a new tile
 
     app.logger.debug(f"PUT 200 /play/submit")
     return Response(response=json.dumps({'status': 'OK'}),
