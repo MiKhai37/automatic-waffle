@@ -58,8 +58,8 @@ def createDistribution(lang, format='list', dirPath='./static/letterDistribution
         csvReader = csv.reader(distCsv)
         header = next(csvReader)
         if format == 'list':
-            distribution = [row for row in csvReader]
-        if format == 'dict':
+            distribution = [[row[0], row[2], row[1]] for row in csvReader]
+        elif format == 'dict':
             distribution = {row[0]: {header[1]: row[1],
                                      header[2]: row[2]} for row in csvReader}
         else:
