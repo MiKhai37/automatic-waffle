@@ -59,7 +59,7 @@ def pingMongoDB():
 @cross_origin(supports_credentials=True)
 def getPlayers():
     """Get all players documents, optional query parameter n (int): to limit the number of returned documents"""
-    n = request.args.get('n',0)
+    n = request.args.get('n',0,int)
 
     playersApi = MongoAPI('players')
     playerDocs = playersApi.readMany(n=n)
@@ -258,7 +258,7 @@ def playerLeave():
 @cross_origin(supports_credentials=True)
 def getGames():
     """Get all infoGame documents, optional query parameter n (int): to limit the number of returned documents"""
-    n = request.args.get('n',0)
+    n = request.args.get('n',0,int)
     infosApi = MongoAPI('infos')
     infoDocs = infosApi.readMany(n=n)
 
