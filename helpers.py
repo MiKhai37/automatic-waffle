@@ -46,7 +46,7 @@ def createDistribution(lang, format='list', dirPath='./static/letterDistribution
             dirPath (string): path of the directory where letter distributions are stored
         Returns:
             distribution (list|dict)
-                format='list' : a list representing the letter distribution [letter, value, count]
+                format='list' : a list representing the letter distribution [letter, count, value]
                 format='dict' : a dict representing the letter distribution {letter: {value: value, count: count}}
     """
     distFilenames = listdir(dirPath)
