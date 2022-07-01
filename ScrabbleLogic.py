@@ -19,7 +19,7 @@ class Scrabble:
     Scrabble class, define scrabble object and methods
     """
     
-    def __init__(self, players, purse=[], racks=[], board=[], gridSize=15, tilesPerRack=7, lang='fr'):
+    def __init__(self, players, purse=[], initialPurse=None, racks=[], board=[], gridSize=15, tilesPerRack=7, lang='fr'):
         if lang != 'fr': raise Exception("Only french language is handled for the moment")
         
         self.players = players
@@ -30,9 +30,11 @@ class Scrabble:
 
         if board == [] and purse == []:
             self.purse = self.__createInitialPurse()
+            self.initialPurse = tuple(self.purse)
             self.racks = self.__drawInitialRacks()
             self.board = []
         else:
+            self.initialPurse = initialPurse
             self.purse = purse
             self.racks = racks
             self.board = board
