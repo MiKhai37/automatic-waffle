@@ -127,14 +127,3 @@ class Scrabble:
         """Return the points mark by the move"""
         points = 0
         return points
-
-
-players = [
-  {'id': 'id0', 'pseudo': 'pseudo0'},
-  {'id': 'id1', 'pseudo': 'pseudo1'}
-]
-
-scrabble = Scrabble(players)
-
-print(len(scrabble.purse))
-pprint(scrabble.racks)
