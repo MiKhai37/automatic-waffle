@@ -96,16 +96,17 @@ class MongoAPI:
             'Status': 'Document not found', 'Code': 404}
         return output
 
-    def readMany(self, filt={}):
+    def readMany(self, filt={}, n=0):
         """
         Find many documents in the collection matching the filter
 
             Parameters:
                 filt (dict): JSON object defining the filter to applicate
+                n (int): number of document you want (0 is equivalent to no limit)
             Returns
                 output (list): list of JSON objects representing the found documents
         """
-        documents = self.collection.find(filt)
+        documents = self.collection.find(filt).limit(n)
         output = [{item: data[item] for item in data if item != '_id'}
                   for data in documents]
         return output

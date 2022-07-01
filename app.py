@@ -58,9 +58,11 @@ def pingMongoDB():
 @app.route('/player', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def getPlayers():
-    """Get all players documents"""
+    """Get all players documents, optional query parameter n (int): to limit the number of returned documents"""
+    n = request.args.get('n',0)
+
     playersApi = MongoAPI('players')
-    playerDocs = playersApi.readMany()
+    playerDocs = playersApi.readMany(n=n)
 
     app.logger.debug(f"GET 200 /player, count: {len(playerDocs)}")
     return Response(response=json.dumps(playerDocs),
@@ -255,9 +257,10 @@ def playerLeave():
 @app.route('/game', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def getGames():
-    """Get all infoGame documents"""
+    """Get all infoGame documents, optional query parameter n (int): to limit the number of returned documents"""
+    n = request.args.get('n',0)
     infosApi = MongoAPI('infos')
-    infoDocs = infosApi.readMany()
+    infoDocs = infosApi.readMany(n=n)
 
     app.logger.debug(f'GET 200 /games, count: {len(infoDocs)}')
     return Response(response=json.dumps(infoDocs),
