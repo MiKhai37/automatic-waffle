@@ -31,7 +31,8 @@ app.logger.setLevel(logging.DEBUG)
 
 @app.before_request
 def requestLog():
-    app.logger.debug(f"Request Info: endpoint: {request.method} {request.endpoint}")
+    app.logger.debug(
+        f"Request Info: endpoint: {request.method} {request.endpoint}")
 
 
 @app.route('/', methods=['GET'])
@@ -59,7 +60,7 @@ def pingMongoDB():
 @cross_origin(supports_credentials=True)
 def getPlayers():
     """Get all players documents, optional query parameter n (int): to limit the number of returned documents"""
-    n = request.args.get('n',0,int)
+    n = request.args.get('n', 0, int)
 
     playersApi = MongoAPI('players')
     playerDocs = playersApi.readMany(n=n)
@@ -68,8 +69,6 @@ def getPlayers():
     return Response(response=json.dumps(playerDocs),
                     status=200,
                     mimetype='application/json')
-
-# TODO:
 
 
 @app.route('/player/search', methods=['GET'])
@@ -258,7 +257,7 @@ def playerLeave():
 @cross_origin(supports_credentials=True)
 def getGames():
     """Get all infoGame documents, optional query parameter n (int): to limit the number of returned documents"""
-    n = request.args.get('n',0,int)
+    n = request.args.get('n', 0, int)
     infosApi = MongoAPI('infos')
     infoDocs = infosApi.readMany(n=n)
 
@@ -268,7 +267,6 @@ def getGames():
                     mimetype='application/json')
 
 
-# TODO:
 @app.route('/game/search', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def searchGames():
@@ -368,7 +366,7 @@ def getOrDeleteGame(gameId):
                         status=200,
                         mimetype='application/json')
 
-    # TODO Also remove the gameTile document if game was started
+    # TODO: Also remove the gameTile document if game was started
     if request.method == 'DELETE':
         if ('Test' in gameId):
             app.logger.error(
@@ -491,7 +489,8 @@ def startGame():
     # Put the updated infoDoc to update
     infosApi.update({'id': gameId}, infoDoc)
 
-    scrabble = Scrabble(players = infoDoc['players'], gridSize=infoDoc['gridSize'], tilesPerRack=infoDoc['tilesPerRack'])
+    scrabble = Scrabble(
+        players=infoDoc['players'], gridSize=infoDoc['gridSize'], tilesPerRack=infoDoc['tilesPerRack'])
     racks = scrabble.racks
     purse = scrabble.purse
     board = scrabble.board
