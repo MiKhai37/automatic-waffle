@@ -25,24 +25,25 @@ def test_purse_draw_n():
     assert purse.count == 102 - n
 
 
-def test_word():
+def test_word() -> None:
     word = Word('test')
     assert isinstance(word, Word)
 
 
-def is_same_values(list, other_list):
-    if len(list) != len(other_list):
+def is_same_values(words: list, other_words: list) -> bool:
+    if len(words) != len(other_words):
         return False
-
-    list = [value.upper() for value in list]
-    other_list = [value.upper() for value in other_list]
-
-    for value in list:
-        if value not in other_list:
+    words = capitalize_word_list(words)
+    other_words = capitalize_word_list(other_words)
+    for word in words:
+        if word not in other_words:
             return False
         else:
-            other_list.remove(value)
+            other_words.remove(word)
     return True
+
+def capitalize_word_list(words):
+    return [word.upper() for word in words]
 
 
 def test_board():

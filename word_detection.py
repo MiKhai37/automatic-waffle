@@ -32,15 +32,12 @@ def detect_words(board_tiles):
     """Detect words on board (combination of two letters or more)"""
     board = create_reduced_board(board_tiles)
     rows = board
-    cols = []
-    for i in range(len(rows)):
-        cols.append([row[i] for row in rows])
+    cols = [[row[i] for row in rows] for i in range(len(rows))]
     cols_and_rows = rows + cols
     whitespaced_strings = list(map(lambda arr: ''.join(arr), cols_and_rows))
     strings = list(map(lambda string: string.split(), whitespaced_strings))
     flat_strings = sum(strings, [])
-    words = list(filter(lambda word: len(word) > 1, flat_strings))
-    return words
+    return list(filter(lambda word: len(word) > 1, flat_strings))
 
 
 def detect_new_words(new_board_tiles, old_board_tiles):

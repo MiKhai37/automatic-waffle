@@ -92,11 +92,9 @@ class MongoAPI:
                 output (dict): JSON object to notify the successfulness of the deletion operation 
         """
         response = self.collection.delete_one(filt)
-        output = {'Status': 'Document Successfully Deleted', 'Code': 204} if response.deleted_count > 0 else {
-            'Status': 'Document not found', 'Code': 404}
-        return output
+        return {'Status': 'Document Successfully Deleted', 'Code': 204} if response.deleted_count > 0 else {'Status': 'Document not found', 'Code': 404}
 
-    def readMany(self, filt={}, n=0):
+    def readMany(self, filt = None, n=0):
         """
         Find many documents in the collection matching the filter
 
@@ -106,10 +104,10 @@ class MongoAPI:
             Returns
                 output (list): list of JSON objects representing the found documents
         """
+        if filt is None:
+            filt = {}
         documents = self.collection.find(filt).limit(n)
-        output = [{item: data[item] for item in data if item != '_id'}
-                  for data in documents]
-        return output
+        return [{item: data[item] for item in data if item != '_id'} for data in documents]
 
     def readOne(self, filt):
         """
@@ -121,10 +119,9 @@ class MongoAPI:
                 output (dict): JSON objects representing the found document
         """
         document = self.collection.find_one(filt)
-        if (document == None):
+        if document is None:
             return {'Status': 'Document not found', 'Code': 404}
-        output = {item: document[item] for item in document if item != '_id'}
-        return output
+        return {item: document[item] for item in document if item != '_id'}
 
     def update(self, filt, dataToBeUpdated):
         """
@@ -138,6 +135,4 @@ class MongoAPI:
         """
         updated_data = {"$set": dataToBeUpdated}
         response = self.collection.update_one(filt, updated_data)
-        output = {'Status': 'Document Successfully Updated' if response.modified_count >
-                  0 else "Nothing was updated."}
-        return output
+        return {'Status': 'Document Successfully Updated' if response.modified_count > 0 else "Nothing was updated."}

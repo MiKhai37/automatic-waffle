@@ -11,7 +11,7 @@ def getAvailLangs(dirPath='./static/dictionaries/'):
             if letter.isupper():
                 firstCapIndex = pos
                 break
-        langs.append(name[0:firstCapIndex])
+        langs.append(name[:firstCapIndex])
     return langs
 
 
@@ -26,7 +26,7 @@ def createDictionary(lang, dirPath='./static/dictionaries/'):
     """
     dictFilenames = listdir(dirPath)
     for name in dictFilenames:
-        if name[0:len(lang)] == lang:
+        if name[:len(lang)] == lang:
             dictPath = dirPath + name
             break
 
@@ -51,7 +51,7 @@ def createDistribution(lang, format='list', dirPath='./static/letterDistribution
     """
     distFilenames = listdir(dirPath)
     for name in distFilenames:
-        if name[0:len(lang)] == lang:
+        if name[:len(lang)] == lang:
             distPath = dirPath + name
 
     with open(distPath, 'r') as distCsv:

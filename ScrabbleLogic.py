@@ -20,9 +20,15 @@ class Scrabble:
         List of tiles available for drawing
     """
 
-    def __init__(self, players, purse=[], racks=[], board=[], gridSize=15, tilesPerRack=7, lang='fr'):
+    def __init__(self, players, purse = None, racks = None, board = None, gridSize=15, tilesPerRack=7, lang='fr'):
+        if purse is None:
+            purse = []
+        if racks is None:
+            racks = []
+        if board is None:
+            board = []
         if lang != 'fr':
-            raise Exception("Only french language is handled for the moment")
+            raise NotImplementedError("Only french language is handled for the moment")
 
         self.players = players
         self.nbPlayers = len(players)
@@ -111,13 +117,11 @@ class Scrabble:
 
     def _findWords(self, move):
         """Return words created by the move"""
-        words = []
-        return words
+        return []
 
     def _calculateScoredPoints(self, words):
         """Return the points mark by the move"""
-        points = 0
-        return points
+        return 0
 
 
 class Player:
@@ -125,7 +129,7 @@ class Player:
         self.name = name
         self.score = score
         self.id = id
-        if id == None:
+        if id is None:
             self.id = str(uuid.uuid4())
 
 
@@ -156,7 +160,9 @@ class Tile(dict):
 
 
 class Board:
-    def __init__(self, tiles: list[Tile] = [], size=15) -> None:
+    def __init__(self, tiles: list[Tile] = None, size=15) -> None:
+        if tiles is None:
+            tiles = []
         for tile in tiles:
             if type(tile) != Tile:
                 raise TypeError(f'{tile} is not a Tile object')
@@ -166,9 +172,8 @@ class Board:
         self.size = size
 
     def __repr__(self) -> str:
-        reduced_board = self.__reduced_board()
-        rept = pformat(reduced_board)
-        return rept
+        reduced_board = self.__create_reduced_board()
+        return pformat(reduced_board)
 
     def __eq__(self, __o: object) -> bool:
         return True
@@ -203,7 +208,7 @@ class Board:
         y_size = y_max - y_min + 1
         return [x_size, x_min, y_size, y_min]
 
-    def __reduced_board(self):
+    def __create_reduced_board(self):
         x_size, x_min, y_size, y_min = self.__board_space()
         row = [' '] * y_size
         reduced_board = [row.copy() for _ in range(x_size)]
@@ -215,17 +220,14 @@ class Board:
         return reduced_board
 
     def words_on_board(self):
-        rows = self.__reduced_board()
-        cols = []
-        for i in range(len(rows[0])):
-            cols.append([row[i] for row in rows])
+        rows = self.__create_reduced_board()
+        cols = [[row[i] for row in rows] for i in range(len(rows[0]))]
         cols_and_rows = rows + cols
         whitespaced_strings = list(
             map(lambda arr: ''.join(arr), cols_and_rows))
         strings = list(map(lambda string: string.split(), whitespaced_strings))
         flat_strings = sum(strings, [])
-        words = list(filter(lambda word: len(word) > 1, flat_strings))
-        return words
+        return list(filter(lambda word: len(word) > 1, flat_strings))
 
     def compare_words(self, word_or_tile):
         old_words = self.words_on_board()
@@ -243,7 +245,9 @@ class Purse:
     Purse class
     """
 
-    def __init__(self, tiles=[], lang='fr') -> None:
+    def __init__(self, tiles = None, lang='fr') -> None:
+        if tiles is None:
+            tiles = []
         self.__lang = lang
         self.__tiles = tiles
         if tiles == []:
@@ -269,10 +273,7 @@ class Purse:
         letters = [letter[0] for letter in distribution]
         available = {}
         for letter in letters:
-            count = 0
-            for tile in self.__tiles:
-                if tile['letter'] == letter:
-                    count += 1
+            count = sum(tile['letter'] == letter for tile in self.__tiles)
             available[letter] = count
         return available
 
@@ -288,21 +289,23 @@ class Purse:
 
 
 class Word(list[Tile]):
-    def __init__(self, text='word', start=[1, 1], orientation='V'):
+    def __init__(self, text='word', start = None, orientation='V'):
+        if start is None:
+            start = [1, 1]
         text = text.upper()
         self.text = text
         self.start = start
-        if orientation == 'V' or orientation == 0:
+        if orientation in ['V', 0]:
             self.end = [start[0], start[1]+len(text)-1]
-        elif orientation == 'H' or orientation == 1:
+        elif orientation in ['H', 1]:
             self.end = [start[0]+len(text)-1, start[1]]
         else:
             raise ValueError(
                 'orientation is (H or 0)for Horizontal, or V (or 1) for Vertical')
         for i, lettre in enumerate(text):
-            if orientation == 'H' or orientation == 0:
+            if orientation in ['H', 0]:
                 self.append(Tile(lettre, [start[0], start[1]+i]))
-            elif orientation == 'V' or orientation == 1:
+            elif orientation in ['V', 1]:
                 self.append(Tile(lettre, [start[0]+i, start[1]]))
 
     def __str__(self) -> str:
