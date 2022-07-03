@@ -2,7 +2,7 @@ import random
 import uuid
 from pprint import pformat
 
-from helpers import createDictionary, createDistribution
+from scrabble_helpers import createDictionary, createDistribution
 
 
 class Scrabble:

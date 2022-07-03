@@ -1,4 +1,4 @@
-from helpers import createDictionary, createDistribution
+from scrabble_helpers import createDictionary, createDistribution
 
 
 def get_board_space(board_tiles):
