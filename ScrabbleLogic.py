@@ -1,7 +1,6 @@
-
 import random
 import uuid
-from pprint import pprint, pformat
+from pprint import pformat
 
 from helpers import createDictionary, createDistribution
 
@@ -20,7 +19,7 @@ class Scrabble:
         List of tiles available for drawing
     """
 
-    def __init__(self, players, purse = None, racks = None, board = None, gridSize=15, tilesPerRack=7, lang='fr'):
+    def __init__(self, players, purse=None, racks=None, board=None, gridSize=15, tilesPerRack=7, lang='fr'):
         if purse is None:
             purse = []
         if racks is None:
@@ -28,7 +27,8 @@ class Scrabble:
         if board is None:
             board = []
         if lang != 'fr':
-            raise NotImplementedError("Only french language is handled for the moment")
+            raise NotImplementedError(
+                "Only french language is handled for the moment")
 
         self.players = players
         self.nbPlayers = len(players)
@@ -175,7 +175,16 @@ class Board:
         reduced_board = self.__create_reduced_board()
         return pformat(reduced_board)
 
-    def __eq__(self, __o: object) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if len(other.tiles) != len(self.tiles):
+            return False
+        tiles_copy = self.tiles.copy()
+        __o_tiles_copy = other.tiles.copy()
+        for tile in tiles_copy:
+            if tile not in __o_tiles_copy:
+                return False
+            else:
+                __o_tiles_copy.remove(tile)
         return True
 
     def add(self, other):
@@ -219,12 +228,21 @@ class Board:
             reduced_board[idx][idy] = letter
         return reduced_board
 
-    def words_on_board(self):
+    def create_board(self):
+        row = [' '] * self.size
+        board = [row.copy() for _ in range(self.size)]
+        for tile in self.tiles:
+            board[tile.x][tile.y] = tile.letter
+        return board
+
+    def words_on_board(self, full=False):
         rows = self.__create_reduced_board()
+        if full:
+            rows = self.create_board()
+        #rows = self.create_board()
         cols = [[row[i] for row in rows] for i in range(len(rows[0]))]
         cols_and_rows = rows + cols
-        whitespaced_strings = list(
-            map(lambda arr: ''.join(arr), cols_and_rows))
+        whitespaced_strings = [''.join(line) for line in cols_and_rows]
         strings = list(map(lambda string: string.split(), whitespaced_strings))
         flat_strings = sum(strings, [])
         return list(filter(lambda word: len(word) > 1, flat_strings))
@@ -240,12 +258,9 @@ class Board:
         return new_words
 
 
-class Purse:
-    """
-    Purse class
-    """
 
-    def __init__(self, tiles = None, lang='fr') -> None:
+class Purse:
+    def __init__(self, tiles=None, lang='fr') -> None:
         if tiles is None:
             tiles = []
         self.__lang = lang
@@ -254,7 +269,7 @@ class Purse:
             self.__tiles: list[Tile] = self.__createInitialPurse()
         self.count = len(self.__tiles)
 
-    def __createInitialPurse(self) -> list:
+    def __createInitialPurse(self) -> list[Tile]:
         """
         Create the inital letter purse
         """
@@ -268,7 +283,7 @@ class Purse:
         random.shuffle(initial_purse)
         return initial_purse
 
-    def what_in(self):
+    def get_letters_in(self):
         distribution = createDistribution(lang=self.__lang, format='list')
         letters = [letter[0] for letter in distribution]
         available = {}
@@ -289,27 +304,23 @@ class Purse:
 
 
 class Word(list[Tile]):
-    def __init__(self, text='word', start = None, orientation='V'):
+    def __init__(self, text='word', start=None, orientation='V'):
         if start is None:
-            start = [1, 1]
-        text = text.upper()
-        self.text = text
+            start = [0, 0]
+        self.text = text.upper()
         self.start = start
-        if orientation in ['V', 0]:
-            self.end = [start[0], start[1]+len(text)-1]
-        elif orientation in ['H', 1]:
-            self.end = [start[0]+len(text)-1, start[1]]
-        else:
+        if orientation not in ['V','H',0,1]:
             raise ValueError(
                 'orientation is (H or 0)for Horizontal, or V (or 1) for Vertical')
-        for i, lettre in enumerate(text):
+        for i, lettre in enumerate(self.text):
             if orientation in ['H', 0]:
                 self.append(Tile(lettre, [start[0], start[1]+i]))
             elif orientation in ['V', 1]:
                 self.append(Tile(lettre, [start[0]+i, start[1]]))
+        self.end = self[-1].loc
 
     def __str__(self) -> str:
         return f'{self.text}: {self.start} -> {self.end}'
 
     def __repr__(self) -> str:
-        return f'ScrabbleWord: {str(self)}'
+        return f'Word: {str(self)}'

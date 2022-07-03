@@ -67,7 +67,7 @@ class MongoAPI:
         output['latency(ms)'] = int(latency*10**3)
         return output
 
-    def create(self, new_document: dict):
+    def insert_doc(self, new_document: dict):
         """
         Insert a new document in the collection
 
@@ -82,7 +82,7 @@ class MongoAPI:
         output['Status'] = 'New Document Successfully Inserted'
         return output
 
-    def delete(self, filt):
+    def delete_doc(self, filt):
         """
         Delete one document in the collection, the first matching the filter
 
@@ -93,8 +93,14 @@ class MongoAPI:
         """
         response = self.collection.delete_one(filt)
         return {'Status': 'Document Successfully Deleted', 'Code': 204} if response.deleted_count > 0 else {'Status': 'Document not found', 'Code': 404}
+    
+    
+    def read_random_docs(self, n=1):
+        random_docs = self.collection.aggregate(([{ "$sample": { "size": n } }]))
+        return [{item: data[item] for item in data if item != '_id'} for data in random_docs]
 
-    def readMany(self, filt = None, n=0):
+
+    def read_many_docs(self, filt = None, n=0):
         """
         Find many documents in the collection matching the filter
 
@@ -109,7 +115,7 @@ class MongoAPI:
         documents = self.collection.find(filt).limit(n)
         return [{item: data[item] for item in data if item != '_id'} for data in documents]
 
-    def readOne(self, filt):
+    def read_one_doc(self, filt):
         """
         Find one document in the collection, the first matching the filter
 
@@ -123,7 +129,7 @@ class MongoAPI:
             return {'Status': 'Document not found', 'Code': 404}
         return {item: document[item] for item in document if item != '_id'}
 
-    def update(self, filt, dataToBeUpdated):
+    def update_one_doc(self, filt, dataToBeUpdated):
         """
         Update one document in the collection, the first matching the filter
 

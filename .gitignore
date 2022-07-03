@@ -1,3 +1,6 @@
+.sourcery.yaml
+.*/
+draft.py
 test.py
 flask_session/
 # Byte-compiled / optimized / DLL files
