@@ -176,6 +176,8 @@ class Board:
         return pformat(reduced_board)
 
     def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Board):
+            return False
         if len(other.tiles) != len(self.tiles):
             return False
         tiles_copy = self.tiles.copy()
@@ -188,9 +190,9 @@ class Board:
         return True
 
     def add(self, other):
-        if type(other) == Tile:
+        if isinstance(other, Tile):
             self.tiles.append(other)
-        elif type(other) == Word:
+        elif isinstance(other, Word):
             self.tiles += other
         else:
             raise TypeError(
