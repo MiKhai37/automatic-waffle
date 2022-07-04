@@ -129,7 +129,7 @@ class MongoAPI:
             return {'Status': 'Document not found', 'Code': 404}
         return {item: document[item] for item in document if item != '_id'}
 
-    def update_one_doc(self, filt, dataToBeUpdated):
+    def update_one_doc(self, filt, data_to_put):
         """
         Update one document in the collection, the first matching the filter
 
@@ -139,6 +139,6 @@ class MongoAPI:
             Returns
                 output (dict): JSON object to notify the successfulness of the updation operation 
         """
-        updated_data = {"$set": dataToBeUpdated}
+        updated_data = {"$set": data_to_put}
         response = self.collection.update_one(filt, updated_data)
         return {'Status': 'Document Successfully Updated' if response.modified_count > 0 else "Nothing was updated."}

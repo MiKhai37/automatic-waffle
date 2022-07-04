@@ -19,7 +19,7 @@ class Scrabble:
         List of tiles available for drawing
     """
 
-    def __init__(self, players, purse=None, racks=None, board=None, gridSize=15, tilesPerRack=7, lang='fr'):
+    def __init__(self, players, purse=None, racks=None, board=None, grid_size=15, tiles_per_rack=7, lang='fr'):
         if purse is None:
             purse = []
         if racks is None:
@@ -31,9 +31,9 @@ class Scrabble:
                 "Only french language is handled for the moment")
 
         self.players = players
-        self.nbPlayers = len(players)
-        self.gridSize = gridSize
-        self.tilesPerRack = tilesPerRack
+        self.nb_players = len(players)
+        self.grid_size = grid_size
+        self.tiles_per_rack = tiles_per_rack
         self.lang = lang
         self.history = []
 
@@ -45,7 +45,7 @@ class Scrabble:
             self.board = []
 
     def __str__(self) -> str:
-        return f"Scrabble game: {len(self.players)} joueurs, {self.gridSize}*{self.gridSize}"
+        return f"Scrabble game: {len(self.players)} joueurs, {self.grid_size}*{self.grid_size}"
 
     def __createInitialPurse(self) -> list:
         """
@@ -73,7 +73,7 @@ class Scrabble:
         racks = []
         for player in self.players:
             rack = []
-            for i in range(self.tilesPerRack):
+            for i in range(self.tiles_per_rack):
                 tile = self.purse.pop()
                 tile['isSelected'] = False
                 tile['isLocked'] = False

@@ -25,8 +25,6 @@ def create_reduced_board(board_tiles):
         board[x][y] = letter
     return board
 
-# TODO: need to return the coords of word for score counting (multiplier)
-
 
 def detect_words(board_tiles):
     """Detect words on board (combination of two letters or more)"""
@@ -62,8 +60,6 @@ def validate_words(words):
             isValid = False
             unvalid_words.append(word)
     return isValid, valid_words, unvalid_words
-
-# TODO: Need to handle with score multiplier
 
 
 def score_words(words):
