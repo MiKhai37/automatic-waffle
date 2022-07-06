@@ -1,10 +1,8 @@
-from fileinput import filename
 from os import listdir
 import csv
-import re
 
 
-def getAvailLangs(dirPath='./static/dictionaries/'):
+def getAvailLangs(dirPath='scrabble_python/dict_and_dist/dictionaries/'):
     """
     Return all implemented languages
     """
@@ -28,7 +26,7 @@ def get_path(lang, dirPath):
         if name[:len(lang)] == lang:
             return(dirPath + name)
 
-def createDictionary(lang='fr', dirPath='./static/dictionaries/'):
+def create_dictionary(lang='fr', dirPath='scrabble_python/dict_and_dist/dictionaries/'):
     """
     Create and return the dictionary in the requested language
         Parameters:
@@ -44,21 +42,15 @@ def createDictionary(lang='fr', dirPath='./static/dictionaries/'):
     return words
 
 
-
-def word_with_n_chars(n, lang='fr'):
+def get_word_with_n_chars(n, lang='fr'):
     """
     Return all words of n characters in the required dictionnary
     """
-    word_dict = createDictionary(lang)
+    word_dict = create_dictionary(lang)
     return [word for word in word_dict if len(word) == n]
 
 
-def word_with_n_chars_with_regex(n, lang='fr'):
-    regex = '\n\w{n}\n'
-    return []
-
-
-def createDistribution(lang='fr', format='list', dirPath='./static/letterDistributions/'):
+def create_distribution(lang='fr', format='list', dirPath='scrabble_python/dict_and_dist/letter_distributions/'):
     """
     Create and return the letter distribution in the requested language
         Parameters:
@@ -83,3 +75,5 @@ def createDistribution(lang='fr', format='list', dirPath='./static/letterDistrib
             raise ValueError('2 formats are available: list or dict')
 
     return distribution
+
+dico = create_dictionary('fr')

@@ -8,7 +8,7 @@ from flask import Flask, make_response, render_template, session, request, \
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 from flask_cors import CORS, cross_origin
-from MongoAPI import MongoAPI
+from flask_app.MongoAPI import MongoAPI
 from ScrabbleLogic import Scrabble
 from request_helpers import delete_doc_or_403, get_body_or_400, get_n_docs, get_doc_or_404
 
@@ -57,7 +57,6 @@ def log_response(res: Response):
 @app.route('/', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def index():
-    """Get backend server status"""
     return render_template('index.html')
 
 

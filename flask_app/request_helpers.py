@@ -1,5 +1,5 @@
-from flask import json, Response, abort
-from MongoAPI import MongoAPI
+from flask import abort
+from .mongo_api import MongoAPI
 
 
 def get_body_or_400(request, req_params):
