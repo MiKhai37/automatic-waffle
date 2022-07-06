@@ -18,8 +18,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'not_very_secret!'
 CORS(app, support_credentials=True)
 socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins="*")
-thread = None
-thread_lock = Lock()
 
 gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
@@ -83,17 +81,6 @@ def get_random_player():
                     mimetype='application/json')
 
 
-@app.route('/player', methods=['GET'])
-@cross_origin(supports_credentials=True)
-def get_players():
-    """Get all players documents, optional query parameter n (int): to limit the number of returned documents"""
-    n = request.args.get('n', 0, int)
-    player_docs = get_n_docs('players', n)
-    return Response(response=json.dumps(player_docs),
-                    status=200,
-                    mimetype='application/json')
-
-
 @app.route('/player/search', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def search_players():
@@ -108,22 +95,32 @@ def search_players():
                     mimetype='application/json')
 
 
-@app.route('/player', methods=['POST'])
+@app.route('/player', methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
-def post_player():
-    """Create a new player, by inserting a new document in players collection"""
-    body = get_body_or_400(request, ['pseudo'])
+def get_or_post_player():
+    """
+    GET: Get all (or n: query parameter) player documents
+    POST: Create a new player document
+    """
+    if request.method == 'POST':
+        body = get_body_or_400(request, ['pseudo'])
 
-    new_player_doc = body
-    new_player_doc.update({
-        'created_at': datetime.utcnow(),
-        'id': str(uuid.uuid4())
-    })
+        new_player_doc = body
+        new_player_doc.update({
+            'created_at': datetime.utcnow(),
+            'id': str(uuid.uuid4())
+        })
 
-    inserted_player_doc = MongoAPI('players').insert_doc(new_player_doc)
+        inserted_player_doc = MongoAPI('players').insert_doc(new_player_doc)
 
-    return Response(response=json.dumps(inserted_player_doc),
-                    status=201,
+        return Response(response=json.dumps(inserted_player_doc),
+                        status=201,
+                        mimetype='application/json')
+
+    n = request.args.get('n', 0, int)
+    player_docs = get_n_docs('players', n)
+    return Response(response=json.dumps(player_docs),
+                    status=200,
                     mimetype='application/json')
 
 
@@ -220,17 +217,6 @@ def player_leave():
 
 
 ### Games Routes and Endpoints ###
-@app.route('/game', methods=['GET'])
-@cross_origin(supports_credentials=True)
-def get_games():
-    """Get all infoGame documents, optional query parameter n (int): to limit the number of returned documents"""
-    n = request.args.get('n', 0, int)
-    game_docs = get_n_docs('infos', n)
-    return Response(response=json.dumps(game_docs),
-                    status=200,
-                    mimetype='application/json')
-
-
 @app.route('/game/search', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def search_games():
@@ -245,36 +231,48 @@ def search_games():
                     mimetype='application/json')
 
 
-@app.route('/game', methods=['POST'])
+@app.route('/game', methods=['GET', 'POST'])
 @cross_origin(supports_credentials=True)
-def post_game():
-    """Create a new game, by inserting a new document in gameInfos collection"""
-    body = get_body_or_400(request, ['creator_id', 'name', 'nb_players'])
+def get_or_post_game():
+    """
+    GET: Get all (or n: query parameter) info documents
+    POST: Create a new info document
+    """
+    if request.method == 'POST':
+        required_parameters = ['creator_id', 'name', 'nb_players']
+        body = get_body_or_400(request, required_parameters)
 
-    creator_id = body.get('creator_id')
-    name = body.get('name')
-    nb_players = body.get('nb_players')
+        creator_id = body.get('creator_id')
+        name = body.get('name')
+        nb_players = body.get('nb_players')
 
-    creator_doc = get_doc_or_404('players', creator_id)
-    creator_doc.pop('created_at', None)
+        creator_doc = get_doc_or_404('players', creator_id)
+        creator_doc.pop('created_at', None)
 
-    new_info_doc = {
-        'creator_id': creator_id,
-        'name': name,
-        'nb_players': nb_players,
-        'created_at': datetime.utcnow(),
-        'id': str(uuid.uuid4()),
-        'players': [creator_doc],
-        'state': 'unstarted',
-        'tiles_per_rack': body.get('tiles_per_rack', 7),
-        'grid_size': body.get('grid_size', 7)
-    }
+        new_info_doc = {
+            'creator_id': creator_id,
+            'name': name,
+            'nb_players': nb_players,
+            'created_at': datetime.utcnow(),
+            'id': str(uuid.uuid4()),
+            'players': [creator_doc],
+            'state': 'unstarted',
+            'tiles_per_rack': body.get('tiles_per_rack', 7),
+            'grid_size': body.get('grid_size', 7)
+        }
 
-    inserted_info_doc = MongoAPI('infos').insert_doc(new_info_doc)
+        inserted_info_doc = MongoAPI('infos').insert_doc(new_info_doc)
 
-    return Response(response=json.dumps(inserted_info_doc),
-                    status=201,
+        return Response(response=json.dumps(inserted_info_doc),
+                        status=201,
+                        mimetype='application/json')
+
+    n = request.args.get('n', 0, int)
+    game_docs = get_n_docs('infos', n)
+    return Response(response=json.dumps(game_docs),
+                    status=200,
                     mimetype='application/json')
+
 
 
 @app.route('/game/<game_id>', methods=['GET', 'DELETE'])
@@ -539,16 +537,6 @@ def get_player_tiles(game_id, player_id):
                     mimetype='application/json')
 
 
-def background_thread():
-    """Example of how to send server generated events to clients."""
-    count = 0
-    while True:
-        socketio.sleep(10)
-        count += 1
-        socketio.emit('my_response',
-                      {'data': 'Server generated event', 'count': count})
-
-
 @app.route('/testsocket')
 @cross_origin(supports_credentials=True)
 def testSocket():
@@ -680,16 +668,6 @@ def move_submit_event(message):
         {'event': 'moveSubmit', 'player_id': message['player_id']},
         to=message['room']
     )
-
-
-@socketio.event
-def connect():
-    app.logger.debug('SOCKETIO connect')
-    global thread
-    with thread_lock:
-        if thread is None:
-            thread = socketio.start_background_task(background_thread)
-    emit('my_response', {'data': 'Connected', 'count': 0})
 
 
 @socketio.on('connect')
