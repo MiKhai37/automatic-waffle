@@ -10,7 +10,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, \
 from flask_cors import CORS, cross_origin
 from flask_app.MongoAPI import MongoAPI
 from ScrabbleLogic import Scrabble
-from request_helpers import delete_doc_or_403, get_body_or_400, get_n_docs, get_doc_or_404
+from flask_app.db_helpers import delete_doc_or_403, get_body_or_400, get_n_docs, get_doc_or_404
 
 async_mode = None
 

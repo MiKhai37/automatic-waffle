@@ -1,11 +1,7 @@
-import os
 import time
 
-from dotenv import load_dotenv
 from pymongo import MongoClient
 
-load_dotenv()
-DATABASE = os.getenv('DATABASE')
 
 class MongoAPI:
     """
@@ -43,11 +39,10 @@ class MongoAPI:
         Update the first document matching the filter parameter filt, with the data in the parameter dataToBeUpdated
     """
 
-    def __init__(self, collection=None, uri=os.getenv('MONGODB_URI'), db_name=os.getenv('DATABASE')):
+    def __init__(self, collection, uri, db_name):
         self.client = MongoClient(uri)
         self.cursor = self.client[db_name]
-        if collection != None:
-            self.collection = self.cursor[collection]
+        self.collection = self.cursor[collection]
 
     def ping(self):
         """
@@ -126,7 +121,7 @@ class MongoAPI:
         """
         document = self.collection.find_one(filt)
         if document is None:
-            return {'Status': 'Document not found', 'Code': 404}
+            return None
         return {item: document[item] for item in document if item != '_id'}
 
     def update_one_doc(self, filt, data_to_put):

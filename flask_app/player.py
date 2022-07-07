@@ -3,9 +3,11 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, Response, json, request
 
-from .mongo_api import MongoAPI
-from .request_helpers import (delete_doc_or_403, get_body_or_400,
+
+from .db import get_mongo_db
+from .db_helpers import (delete_doc_or_403, get_body_or_400,
                               get_doc_or_404, get_n_docs)
+
 
 bp = Blueprint('player', __name__, url_prefix='/player')
 
@@ -25,7 +27,7 @@ def index():
             'id': str(uuid.uuid4())
         })
 
-        insert_result = MongoAPI('players').insert_doc(new_player_doc)
+        insert_result = get_mongo_db('players').insert_doc(new_player_doc)
 
         return Response(response=json.dumps(insert_result),
                         status=201,
