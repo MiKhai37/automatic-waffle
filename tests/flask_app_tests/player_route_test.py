@@ -1,3 +1,8 @@
+def test_get_all_players(client):
+    post_response = client.get('/player/')
+    assert post_response.status_code == 200
+
+
 def test_post_get_delete_player(client):
     test_player_pseudo = 'test_pseudo'
     post_response = client.post(
