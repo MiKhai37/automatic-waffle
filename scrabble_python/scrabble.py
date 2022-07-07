@@ -1,16 +1,26 @@
-from .items import Player
-from .items import Board
-from .items import Purse
-from .errors import ScrabbleError
+from scrabble_python.items.helpers import get_avail_langs
+from scrabble_python.items import Player
+from scrabble_python.items import Board
+from scrabble_python.items import Purse
+from scrabble_python.errors import ScrabbleError
 
 
 class Scrabble:
     default_board_size = 15
     default_rack_size = 7
+    default_lang = 'fr'
+
     def __init__(self, players: list[Player] = None, purse: Purse = None, board: Board = None, **scrabble_config) -> None:
-        self.lang = scrabble_config['lang']
-        self.board_size = scrabble_config['board_size']
-        self.rack_size = scrabble_config['rack_size']
+        lang = scrabble_config.get('lang')
+        board_size = scrabble_config.get('board_size')
+        rack_size = scrabble_config.get('rack_size')
+        avail_langs = get_avail_langs()
+        if lang is not None and lang not in avail_langs:
+            raise ScrabbleError(
+                f'language not available, available languages: {avail_langs}')
+        self.lang = Scrabble.default_lang if lang is None else lang
+        self.board_size = Scrabble.default_board_size if board_size is None else board_size
+        self.rack_size = Scrabble.default_rack_size if rack_size is None else rack_size
 
         self.players = players
         if self.players is None:

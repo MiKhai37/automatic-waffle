@@ -2,7 +2,7 @@ from os import listdir
 import csv
 
 
-def getAvailLangs(dirPath='scrabble_python/dict_and_dist/dictionaries/'):
+def get_avail_langs(dirPath='scrabble_python/dict_and_dist/dictionaries/'):
     """
     Return all implemented languages
     """

@@ -2,7 +2,7 @@ from flask import abort
 from flask_app.db import get_mongo_db
 
 
-def get_body_or_400(request, req_params, opt_params = None):
+def get_body_or_400(request, req_params, opt_params=None):
     if opt_params is None:
         opt_params = []
     body = request.json

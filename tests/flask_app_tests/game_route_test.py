@@ -19,6 +19,7 @@ def test_default_config_post_game(client):
     assert game_infos['board_size'] == Scrabble.default_board_size
     assert game_infos['rack_size'] == Scrabble.default_rack_size
 
+
 def test_custom_config_post_game(client):
     post_game_response = client.post(
         '/game/', json=basic_config.update({'board_size': 10, 'rack_size': 5})
@@ -29,9 +30,11 @@ def test_custom_config_post_game(client):
     game_infos = get_game_response.json
     assert game_infos['board_size'] == 15
     assert game_infos['rack_size'] == 7
-    
+
+
 def test_join_game(client):
     pass
+
 
 def test_start_game(client):
     pass
