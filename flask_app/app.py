@@ -10,7 +10,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, \
 from flask_cors import CORS, cross_origin
 from flask_app.MongoAPI import MongoAPI
 from ScrabbleLogic import Scrabble
-from flask_app.db_helpers import delete_doc_or_403, get_body_or_400, get_n_docs, get_doc_or_404
+from flask_app.db_helpers import delete_doc_or_404, get_body_or_400, get_n_docs, get_doc_or_404
 
 async_mode = None
 
@@ -140,7 +140,7 @@ def get_or_delete_player(player_id):
     if method == 'GET':
         doc_or_delete_result = get_doc_or_404('players', player_id)
     if method == 'DELETE':
-        doc_or_delete_result = delete_doc_or_403('players', player_id)
+        doc_or_delete_result = delete_doc_or_404('players', player_id)
     return Response(response=json.dumps(doc_or_delete_result),
                     status=201,
                     mimetype='application/json')
@@ -292,7 +292,7 @@ def get_or_delete_game(game_id):
     if method == 'GET':
         doc_or_delete_result = get_doc_or_404('infos', game_id)
     if method == 'DELETE':
-        doc_or_delete_result = delete_doc_or_403('infos', game_id)
+        doc_or_delete_result = delete_doc_or_404('infos', game_id)
     return Response(response=json.dumps(doc_or_delete_result),
                     status=201,
                     mimetype='application/json')

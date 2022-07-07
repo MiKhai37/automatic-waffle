@@ -16,13 +16,18 @@ def test_post_get_delete_player(client):
     assert reget_response.status_code == 404
 
 
-def test_post_uncomplete_body(client):
+def test_post_unvalid_body(client):
     post_uncomplete_body_response = client.post(
         '/player/', json={'pseudio': 'test_pseudo'})
     assert post_uncomplete_body_response.status_code == 400
 
 
-def test_post_too_much(client):
+def test_post_too_much_body(client):
     post_to_much_body_response = client.post(
         '/player/', json={'pseudo': 'test_pseudo', 'too_pseudo': 'test_too_pseudo'})
     assert post_to_much_body_response.status_code == 400
+
+
+def test_delete_404(client):
+    redelete_response = client.delete('/player/unexistent_id')
+    assert redelete_response.status_code == 404

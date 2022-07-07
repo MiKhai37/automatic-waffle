@@ -16,7 +16,6 @@ def app():
         get_mongo_db('test_coll').insert_doc({'id': 'test_id', 'test_key': 'test_value'})
 
     yield app
-    print('after yield')
 
     # Deletion of testing documents
     with app.app_context():

@@ -16,11 +16,12 @@ def get_n_docs(collection, n):
     return collection_api.read_many_docs(n)
 
 
-def delete_doc_or_403(collection, doc_id, id_key='id'):
+def delete_doc_or_404(collection, doc_id, id_key='id'):
     coll_api = get_mongo_db(collection)
-    if ('Test' in doc_id):
-        abort(403, 'Deletion of testing docs is unallowed')
-    return coll_api.delete_doc({id_key: doc_id})
+    delete_result = coll_api.delete_doc({id_key: doc_id})
+    if (delete_result['Status'] == 'Document not found'):
+        abort(404, 'Document not found')
+    return delete_result
 
 
 def get_doc_or_404(collection, doc_id, id_key='id'):

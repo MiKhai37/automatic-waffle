@@ -5,7 +5,7 @@ from flask import Blueprint, Response, json, request
 
 
 from .db import get_mongo_db
-from .db_helpers import (delete_doc_or_403, get_body_or_400,
+from .db_helpers import (delete_doc_or_404, get_body_or_400,
                               get_doc_or_404, get_n_docs)
 
 
@@ -53,7 +53,7 @@ def get_or_delete_player(player_id):
         Delete the corresponding player document
     """
     if request.method == 'DELETE':
-        response_result = delete_doc_or_403('players', player_id)
+        response_result = delete_doc_or_404('players', player_id)
         status = 201
     else:
         response_result = get_doc_or_404('players', player_id)

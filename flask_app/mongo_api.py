@@ -87,7 +87,7 @@ class MongoAPI:
                 output (dict): JSON object to notify the successfulness of the deletion operation 
         """
         response = self.collection.delete_one(filt)
-        return {'Status': 'Document Successfully Deleted', 'Code': 204} if response.deleted_count > 0 else {'Status': 'Document not found', 'Code': 404}
+        return {'Status': 'Document Successfully Deleted'} if response.deleted_count > 0 else {'Status': 'Document not found'}
     
     
     def read_random_docs(self, n=1):

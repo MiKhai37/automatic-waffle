@@ -38,7 +38,6 @@ def create_app(test_config=None):
     # Link with mongo db
     from . import db
     db.link_app(app)
-
     # Blueprint registrations
     from . import game, player
     app.register_blueprint(player.bp)
