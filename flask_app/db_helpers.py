@@ -2,11 +2,18 @@ from flask import abort
 from flask_app.db import get_mongo_db
 
 
-def get_body_or_400(request, req_params):
+def get_body_or_400(request, req_params, opt_params = None):
+    if opt_params is None:
+        opt_params = []
     body = request.json
-    if body.keys() != set(req_params):
+    if any(param not in body for param in req_params):
         abort(
-            400, description=f'Missing parameters in body, required parameters: {req_params}')
+            400, description=f'Missing parameters in body, required parameters: {req_params}'
+        )
+    elif any(param not in req_params + opt_params for param in body):
+        abort(
+            400, description=f'Unneeded parameter in body, possible parameters: {req_params + opt_params}'
+        )
     else:
         return body
 

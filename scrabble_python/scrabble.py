@@ -5,6 +5,8 @@ from .errors import ScrabbleError
 
 
 class Scrabble:
+    default_board_size = 15
+    default_rack_size = 7
     def __init__(self, players: list[Player] = None, purse: Purse = None, board: Board = None, **scrabble_config) -> None:
         self.lang = scrabble_config['lang']
         self.board_size = scrabble_config['board_size']
