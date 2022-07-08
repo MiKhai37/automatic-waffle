@@ -3,7 +3,7 @@ from werkzeug.exceptions import BadRequest
 import pytest
 
 req_params = ['param1', 'param2']
-opt_params = ['param3']
+opt_params = ['param3', 'param4']
 
 class FakeRequest:
     def __init__(self, json) -> None:
@@ -24,7 +24,7 @@ def test_uncomplete_body():
 
 
 def test_too_much_body():
-    too_much__request = FakeRequest({'param1': 'value_1', 'param2': 'value_2', 'param4': 'value_4'})
+    too_much__request = FakeRequest({'param1': 'value_1', 'param2': 'value_2', 'param5': 'value_5'})
     with pytest.raises(BadRequest):
         body = None
         body = get_body_or_400(too_much__request, req_params, opt_params)

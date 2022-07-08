@@ -11,9 +11,9 @@ custom_scrabble_config = {
 
 def test_default_config_scrabble_init():
     scrabble = Scrabble()
-    assert scrabble.board_size == Scrabble.default_board_size
-    assert scrabble.rack_size == Scrabble.default_rack_size
-    assert scrabble.lang == Scrabble.default_lang
+    assert scrabble.board_size == Scrabble.dft_board_size
+    assert scrabble.rack_size == Scrabble.dft_rack_size
+    assert scrabble.lang == Scrabble.dft_lang
     assert len(scrabble.players) == scrabble.nb_players == 2
     assert [len(player.rack) for player in scrabble.players] == [
         scrabble.rack_size] * scrabble.nb_players

@@ -1,7 +1,8 @@
 from pprint import pformat
+
+from scrabble_python.errors.scrabble_errors import BoardOverlap,ScrabbleError
 from .tile import Tile
 from .word import Word
-from ..errors import ScrabbleError
 
 multipliers = {
     'word_triple': [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)],
@@ -57,8 +58,8 @@ class Board:
         # Tile overlap check
         for tile_to_add in tiles_to_add:
             if tile_to_add.pos in coords_on_board:
-                raise ScrabbleError(
-                    f'Tile overlap: there is already a tile on {tile_to_add.pos}')
+                raise BoardOverlap(
+                    f'Board overlap on {tile_to_add.pos}')
         self.tiles += tiles_to_add
 
     def remove_tiles(self, tiles_to_remove: list[Tile]):

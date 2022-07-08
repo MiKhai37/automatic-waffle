@@ -1,8 +1,8 @@
 class ScrabbleError(Exception):
     pass
 
-class PurseError(Exception):
+class EmptyPurse(ScrabbleError):
     pass
 
-class UnvalidWords(Exception):
+class BoardOverlap(ScrabbleError):
     pass

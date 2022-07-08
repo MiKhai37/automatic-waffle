@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from flask import Blueprint, Response, json, request
 
 
-from .db import get_mongo_db
-from .db_helpers import (delete_doc_or_404, get_body_or_400,
+from flask_app.db import get_mongo_db
+from flask_app.db_helpers import (delete_doc_or_404, get_body_or_400,
                               get_doc_or_404, get_n_docs)
 
 

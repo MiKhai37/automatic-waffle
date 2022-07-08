@@ -1,6 +1,8 @@
 def test_get_all_players(client):
     post_response = client.get('/player/')
     assert post_response.status_code == 200
+    print(post_response.json)
+    assert len(post_response.json) == 2
 
 
 def test_post_get_delete_player(client):

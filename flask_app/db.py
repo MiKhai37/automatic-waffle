@@ -1,20 +1,20 @@
 from flask import Flask, current_app, g
 
-from .mongo_api import MongoAPI
+from flask_app.mongo_api import MongoAPI
 
 
 def get_mongo_db(collection: str):
     current_app.logger.debug(f'MONGODB {collection} Opened')
-    if 'mongo_db' not in g:
-        g.mongo_db = MongoAPI(
+    if f'mongo_db_{collection}' not in g:
+        g.setdefault(f'mongo_db_{collection}', MongoAPI(
             collection=collection,
             uri=current_app.config['MONGO_URI'],
             db_name=current_app.config['DB_NAME']
-        )
+        ))
+        
+    return g.get(f'mongo_db_{collection}')
 
-    return g.mongo_db
-
-
+# TODO fix close the connection
 def close_mongo_db(e=None):
     mongo_db = g.pop('mongo_db', None)
     if mongo_db is not None:
