@@ -39,10 +39,11 @@ def create_app(test_config=None):
     from . import db
     db.link_app(app)
     # Blueprint registrations
-    from flask_app.routes import player, game
+    from flask_app.routes import player, game, play
     
     app.register_blueprint(player.bp)
     app.register_blueprint(game.bp)
+    app.register_blueprint(play.bp)
 
     # CORS
     CORS(app, supports_credentials=True)
