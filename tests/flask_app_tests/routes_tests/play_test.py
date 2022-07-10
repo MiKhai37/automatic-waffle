@@ -11,5 +11,5 @@ def test_end_play(client):
     assert False
 
 
-def test_cheat_play(client):
+def test_cheat_detection(client):
     assert False

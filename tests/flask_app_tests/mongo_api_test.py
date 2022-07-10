@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from flask_app.mongo_api import MongoAPI
+from scrabble_flask.mongo_api import MongoAPI
 
 load_dotenv()
 

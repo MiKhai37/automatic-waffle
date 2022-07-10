@@ -1,5 +1,5 @@
 import os
-from flask_app import create_app
+from scrabble_flask import create_app
 
 
 def test_config():

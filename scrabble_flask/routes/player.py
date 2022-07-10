@@ -1,12 +1,12 @@
-import uuid
+from uuid import uuid4
 from datetime import datetime, timezone
 
 from flask import Blueprint, Response, json, request
 
 
-from flask_app.db import get_mongo_db
-from flask_app.db_helpers import (delete_doc_or_404, get_body_or_400,
-                              get_doc_or_404, get_n_docs)
+from scrabble_flask.db import get_mongo_db
+from scrabble_flask.db_helpers import (delete_doc_or_404, get_body_or_400,
+                                  get_doc_or_404, get_n_docs)
 
 
 bp = Blueprint('player', __name__, url_prefix='/player')
@@ -24,7 +24,7 @@ def index():
         new_player_doc = body
         new_player_doc.update({
             'created_at': datetime.now(timezone.utc),
-            'id': str(uuid.uuid4())
+            'id': str(uuid4())
         })
 
         insert_result = get_mongo_db('players').insert_doc(new_player_doc)
@@ -54,7 +54,7 @@ def get_or_delete_player(player_id):
     """
     if request.method == 'DELETE':
         response_result = delete_doc_or_404('players', player_id)
-        status = 201
+        status = 204
     else:
         response_result = get_doc_or_404('players', player_id)
         status = 200

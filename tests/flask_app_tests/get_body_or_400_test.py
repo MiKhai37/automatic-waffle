@@ -1,4 +1,4 @@
-from flask_app.db_helpers import get_body_or_400
+from scrabble_flask.db_helpers import get_body_or_400
 from werkzeug.exceptions import BadRequest
 import pytest
 

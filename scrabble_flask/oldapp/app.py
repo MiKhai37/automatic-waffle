@@ -8,9 +8,9 @@ from flask import Flask, make_response, render_template, session, request, \
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 from flask_cors import CORS, cross_origin
-from flask_app.MongoAPI import MongoAPI
+from scrabble_flask.MongoAPI import MongoAPI
 from ScrabbleLogic import Scrabble
-from flask_app.db_helpers import delete_doc_or_404, get_body_or_400, get_n_docs, get_doc_or_404
+from scrabble_flask.db_helpers import delete_doc_or_404, get_body_or_400, get_n_docs, get_doc_or_404
 
 async_mode = None
 

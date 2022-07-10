@@ -6,9 +6,9 @@ from scrabble_python.errors import ScrabbleError
 
 
 class Scrabble:
-    dft_board_size = 15
-    dft_rack_size = 7
-    dft_lang = 'fr'
+    df_board_size = 15
+    df_rack_size = 7
+    df_lang = 'fr'
 
     def __init__(self, players: list[Player] = None, purse: Purse = None, board: Board = None, **scrabble_config) -> None:
         lang = scrabble_config.get('lang')
@@ -18,9 +18,9 @@ class Scrabble:
         if lang is not None and lang not in avail_langs:
             raise ScrabbleError(
                 f'language not available, available languages: {avail_langs}')
-        self.lang = Scrabble.dft_lang if lang is None else lang
-        self.board_size = Scrabble.dft_board_size if board_size is None else board_size
-        self.rack_size = Scrabble.dft_rack_size if rack_size is None else rack_size
+        self.lang = Scrabble.df_lang if lang is None else lang
+        self.board_size = Scrabble.df_board_size if board_size is None else board_size
+        self.rack_size = Scrabble.df_rack_size if rack_size is None else rack_size
 
         self.players = players
         if self.players is None:
@@ -44,3 +44,6 @@ class Scrabble:
         for _ in range(self.rack_size):
             for player in self.players:
                 player.rack.append(self.purse.draw())
+
+    def submit(self, move):
+        pass

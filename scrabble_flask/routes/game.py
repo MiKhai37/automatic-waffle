@@ -1,11 +1,12 @@
 from uuid import uuid4
+from datetime import datetime, timezone
 
 from flask import Blueprint, Response, abort, json, request
-from flask_app.db import get_mongo_db
+from scrabble_flask.db import get_mongo_db
 
 from scrabble_python import Scrabble
 
-from flask_app.db_helpers import (delete_doc_or_404, get_body_or_400,
+from scrabble_flask.db_helpers import (delete_doc_or_404, get_body_or_400,
                                   get_doc_or_404, get_n_docs)
 
 bp = Blueprint('game', __name__, url_prefix='/game')
@@ -24,12 +25,14 @@ def index():
         creator_doc = get_doc_or_404('players', body['creator_id'])
 
         config = {
-            'board_size': body.get('board_size', Scrabble.dft_board_size),
-            'rack_size': body.get('rack_size', Scrabble.dft_rack_size),
-            'lang': body.get('lang', Scrabble.dft_lang)
+            'board_size': body.get('board_size', Scrabble.df_board_size),
+            'rack_size': body.get('rack_size', Scrabble.df_rack_size),
+            'lang': body.get('lang', Scrabble.df_lang)
         }
 
         new_game_doc = {
+            'created_at': datetime.now(timezone.utc),
+            'state': 'unstarted',
             'id': str(uuid4()),
             'creator_id': body['creator_id'],
             'name': body['name'],
@@ -42,7 +45,12 @@ def index():
         return Response(response=json.dumps(insert_result),
                         status=201,
                         mimetype='application/json')
-    abort(404)
+
+    n = request.args.get('n', 0, int)
+    game_docs = get_n_docs('games', n)
+    return Response(response=json.dumps(game_docs),
+                    status=200,
+                    mimetype='application/json')
 
 
 @bp.route('/<game_id>', methods=['GET'])
@@ -60,6 +68,7 @@ def join_game():
     player_doc = get_doc_or_404('players', body['player_id'])
     game_doc = get_doc_or_404('games', body['game_id'])
     players = game_doc['players']
+    # Avoid duplicate join
     if body['player_id'] not in [player['id'] for player in players]:
         players.append(player_doc)
     update_result = get_mongo_db('games').update_one_doc(
@@ -76,6 +85,7 @@ def leave_game():
     player_doc = get_doc_or_404('players', body['player_id'])
     game_doc = get_doc_or_404('games', body['game_id'])
     players = game_doc['players']
+    # Avoid duplicate remove
     if body['player_id'] in [player['id'] for player in players]:
         players.remove(player_doc)
     update_result = get_mongo_db('games').update_one_doc(

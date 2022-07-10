@@ -1,3 +1,3 @@
-from flask_app import create_app
+from scrabble_flask import create_app
 
 app = create_app()

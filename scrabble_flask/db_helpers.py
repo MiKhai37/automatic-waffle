@@ -1,5 +1,5 @@
 from flask import abort
-from flask_app.db import get_mongo_db
+from scrabble_flask.db import get_mongo_db
 
 
 def get_body_or_400(request, req_params, opt_params=None):
