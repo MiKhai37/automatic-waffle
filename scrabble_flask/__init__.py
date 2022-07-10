@@ -19,7 +19,6 @@ def create_app(test_config=None):
         # load the test config if passed in
         default_config = "config.Config"
         app.config.from_object(default_config)
-        app.config.from_mapping(test_config)
 
     import logging
 
