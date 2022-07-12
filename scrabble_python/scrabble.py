@@ -1,8 +1,6 @@
-from scrabble_python.helpers import get_avail_langs
-from scrabble_python.items import Player
-from scrabble_python.items import Board
-from scrabble_python.items import Purse
-from scrabble_python.errors import ScrabbleError
+from .errors import ScrabbleError
+from .helpers import get_avail_langs
+from .items import Board, Player, Purse
 
 
 class Scrabble:

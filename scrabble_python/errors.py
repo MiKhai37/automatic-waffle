@@ -1,4 +1,4 @@
-from scrabble_python.helpers import get_avail_langs
+from .helpers import get_avail_langs
 
 class ScrabbleError(Exception):
     pass

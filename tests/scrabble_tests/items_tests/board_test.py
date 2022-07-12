@@ -1,11 +1,9 @@
-import pytest
 from copy import deepcopy
-from scrabble_python.errors.scrabble_errors import BoardOverlap, NoCenter, UnalignedTiles
-from scrabble_python.items import Board
-from scrabble_python.items import Tile
-from scrabble_python.items import Word
-from scrabble_python.errors import ScrabbleError, BadWords
 
+import pytest
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
+                                    ScrabbleError, UnalignedTiles)
+from scrabble_python.items import Board, Tile, Word
 
 valid_first_tiles = [
     Tile('T', (7, 7)),

@@ -1,1 +1,0 @@
-from .scrabble_errors import ScrabbleError, BadWords

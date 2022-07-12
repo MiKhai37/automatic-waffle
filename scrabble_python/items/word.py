@@ -1,4 +1,4 @@
-from scrabble_python.items.tile import Tile
+from .tile import Tile
 from scrabble_python.helpers import create_dictionary
 
 

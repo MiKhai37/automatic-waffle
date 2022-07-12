@@ -1,8 +1,10 @@
 from pprint import pformat
 
-from scrabble_python.errors.scrabble_errors import BadWords, BoardOverlap, NoCenter,ScrabbleError, UnalignedTiles
-from scrabble_python.items.tile import Tile
-from scrabble_python.items.word import Word
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
+                                    ScrabbleError, UnalignedTiles)
+
+from .tile import Tile
+from .word import Word
 
 multipliers = {
     'word_triple': [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)],
