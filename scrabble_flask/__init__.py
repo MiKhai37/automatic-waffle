@@ -1,3 +1,4 @@
+import logging
 import os
 
 from flask import Flask
@@ -19,8 +20,8 @@ def create_app(test_config=None):
         # load the test config if passed in
         default_config = "config.Config"
         app.config.from_object(default_config)
+        app.config.from_mapping(test_config)
 
-    import logging
 
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
@@ -35,10 +36,10 @@ def create_app(test_config=None):
         return "Automatic Waffle"
 
     # Link with mongo db
-    from . import db
+    from scrabble_flask import db
     db.link_app(app)
     # Blueprint registrations
-    from scrabble_flask.routes import player, game, play
+    from scrabble_flask.routes import game, play, player
     
     app.register_blueprint(player.bp)
     app.register_blueprint(game.bp)

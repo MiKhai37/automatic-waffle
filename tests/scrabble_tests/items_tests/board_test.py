@@ -1,9 +1,10 @@
 import pytest
 from copy import deepcopy
+from scrabble_python.errors.scrabble_errors import BoardOverlap, NoCenter, UnalignedTiles
 from scrabble_python.items import Board
 from scrabble_python.items import Tile
 from scrabble_python.items import Word
-from scrabble_python.errors import ScrabbleError
+from scrabble_python.errors import ScrabbleError, BadWords
 
 
 valid_first_tiles = [
@@ -21,20 +22,29 @@ unvalid_first_tiles = [
 ]
 
 
-def test_init_empty_board():
+def test_init_board():
+    # Empty board
     board = Board()
     assert isinstance(board, Board)
     assert len(board) == 0
+    # Valid board
+    valid_board = Board(valid_first_tiles)
+    assert len(valid_board) == 4
+    # Unvalid board, no center
+    with pytest.raises(ScrabbleError) as err_info:
+        unvalid_board = Board(unvalid_first_tiles)
+    assert err_info.typename == NoCenter.__name__
 
 
-def test_valid_init_board():
-    board = Board(valid_first_tiles)
+def test_first_add_tiles():
+    # First tile must be on center
+    board = Board()
+    board.add_tiles(valid_first_tiles)
     assert len(board) == 4
-
-
-def test_unvalid_init_board():
-    with pytest.raises(ScrabbleError):
-        board = Board(unvalid_first_tiles)
+    board = Board()
+    with pytest.raises(ScrabbleError) as err_info:
+        board.add_tiles(unvalid_first_tiles)
+    assert err_info.typename == NoCenter.__name__
 
 
 def test_add_tiles():
@@ -42,23 +52,22 @@ def test_add_tiles():
     new_tiles = [Tile('O', (8, 7)), Tile('I', (9, 7))]
     board.add_tiles(new_tiles)
     assert len(board) == 6
-    # First tile must be on center
-    board = Board()
-    board.add_tiles(valid_first_tiles)
-    assert len(board) == 4
-    board = Board()
-    with pytest.raises(ScrabbleError):
-        board.add_tiles(unvalid_first_tiles)
-    assert len(board) == 0
 
+def test_unaligned_tiles():
+    board = Board()
+    unaligned_tiles = [Tile('T', (7,7)), Tile('A', (7,8)), Tile('E', (6,7))]
+    with pytest.raises(ScrabbleError) as err_info:
+        board.add_tiles(unaligned_tiles)
+    assert err_info.typename == UnalignedTiles.__name__
 
 def test_overlap_add_tiles():
     board = Board(valid_first_tiles)
-    with pytest.raises(ScrabbleError):
+    with pytest.raises(ScrabbleError) as err_info:
         overlap_new_tiles = [Tile('T', (7, 7)), Tile(
             'O', (8, 7)), Tile('I', (9, 7))]
         board.add_tiles(overlap_new_tiles)
-    assert len(board) == 4
+    assert err_info.typename == BoardOverlap.__name__
+    assert err_info.value.overlap_pos == (7,7)
 
 
 def test_remove_tiles():
@@ -99,11 +108,10 @@ def test_get_new_words():
 def test_get_new_words_unvalid():
     board = Board(valid_first_tiles)
     new_tiles = [Tile('Z', (8, 7)), Tile('W', (9, 7))]
-    with pytest.raises(ScrabbleError) as error:
+    with pytest.raises(BadWords) as error:
         board.get_new_words(new_tiles)
-    print(error.value)
-    assert 'TZW' in  str(error.value)
-        
+    assert 'TZW' in (word.text for word in error.value.bad_words)
+
 
 def test_get_score():
     board = Board()
@@ -111,4 +119,4 @@ def test_get_score():
     assert score == 4 * 2
     board.add_tiles(valid_first_tiles)
     # score = board.get_score([Tile('E'), Tile('T'), Tile()])
-
+    assert False

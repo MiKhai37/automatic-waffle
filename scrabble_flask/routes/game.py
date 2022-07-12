@@ -27,7 +27,8 @@ def index():
         config = {
             'board_size': body.get('board_size', Scrabble.df_board_size),
             'rack_size': body.get('rack_size', Scrabble.df_rack_size),
-            'lang': body.get('lang', Scrabble.df_lang)
+            'lang': body.get('lang', Scrabble.df_lang),
+            'private': body.get('private', False)
         }
 
         new_game_doc = {
