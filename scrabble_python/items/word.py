@@ -1,5 +1,5 @@
-from .tile import Tile
-from .helpers import create_dictionary
+from scrabble_python.items.tile import Tile
+from scrabble_python.helpers import create_dictionary
 
 
 class Word:

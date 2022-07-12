@@ -1,4 +1,4 @@
-from scrabble_python.items.helpers import get_avail_langs
+from scrabble_python.helpers import get_avail_langs
 from scrabble_python.items import Player
 from scrabble_python.items import Board
 from scrabble_python.items import Purse
@@ -46,4 +46,7 @@ class Scrabble:
                 player.rack.append(self.purse.draw())
 
     def submit(self, move):
+        pass
+
+    def cli_play(self):
         pass

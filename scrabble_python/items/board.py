@@ -1,8 +1,8 @@
 from pprint import pformat
 
 from scrabble_python.errors.scrabble_errors import BadWords, BoardOverlap, NoCenter,ScrabbleError, UnalignedTiles
-from .tile import Tile
-from .word import Word
+from scrabble_python.items.tile import Tile
+from scrabble_python.items.word import Word
 
 multipliers = {
     'word_triple': [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)],
@@ -112,7 +112,6 @@ class Board:
         for old_word in old_words:
             if old_word in new_words:
                 new_words.remove(old_word)
-        # TODO: Find way to retireve the unvalid_words in the ScrabbleError
         if unvalid_words := [word for word in new_words if not word]:
             raise BadWords('Unvalid words detected',
                                 bad_words=unvalid_words,good_words=new_words)

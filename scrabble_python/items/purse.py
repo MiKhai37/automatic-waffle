@@ -1,7 +1,7 @@
 import random
-from .helpers import create_distribution
-from .tile import Tile
-from ..errors import ScrabbleError
+from scrabble_python.helpers import create_distribution
+from scrabble_python.items.tile import Tile
+from scrabble_python.errors import ScrabbleError
 
 
 class Purse:

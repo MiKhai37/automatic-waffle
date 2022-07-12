@@ -1,9 +1,13 @@
+from scrabble_python.helpers import get_avail_langs
+
 class ScrabbleError(Exception):
     pass
 
 
 class UnavailableLanguage(ScrabbleError):
-    pass
+    def __init__(self, unavail_lang: str) -> None:
+        super().__init__(f'{unavail_lang}: this language is unavailable')
+        self.avail_langs = get_avail_langs()
 
 
 class EmptyPurse(ScrabbleError):

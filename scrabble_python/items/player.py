@@ -1,5 +1,5 @@
 from uuid import uuid4
-from .tile import Tile
+from scrabble_python.items.tile import Tile
 
 
 class Player:

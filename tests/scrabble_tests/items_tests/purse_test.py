@@ -1,7 +1,7 @@
 import pytest
 from scrabble_python.items import Purse
 from scrabble_python.items import Tile
-from scrabble_python.items.helpers import create_distribution
+from scrabble_python.helpers import create_distribution
 from scrabble_python.errors import ScrabbleError
 
 
