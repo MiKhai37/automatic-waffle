@@ -3,16 +3,16 @@ from scrabble_python.helpers import create_dictionary
 
 
 class Word:
-    def __init__(self, text: str, start: list, orientation='H', lang='fr'):
+    def __init__(self, text: str, start: list, direction='H', lang='fr'):
         self.score = 0
         self.text = text.upper()
         self.lang = lang
         self.start = tuple(start)
-        if orientation not in ['V', 'H', 0, 1]:
+        if direction not in ['V', 'H', 0, 1]:
             raise ValueError(
-                'orientation is (H or 0)for Horizontal, or V (or 1) for Vertical')
-        self.orientation = orientation
-        if orientation in ['H', 0]:
+                'direction is (H or 0)for Horizontal, or V (or 1) for Vertical')
+        self.direction = direction
+        if direction in ['H', 0]:
             self.tiles = [Tile(lettre, (start[0], start[1] + i))
                           for (i, lettre) in enumerate(self.text)]
         else:
@@ -25,7 +25,7 @@ class Word:
         return f'{self.text}: {self.start} -> {self.end}'
 
     def __repr__(self) -> str:
-        return f'Word({self.text}, {self.start}, {self.orientation})'
+        return f'Word({self.text}, {self.start}, {self.direction})'
 
     def __len__(self):
         return len(self.tiles)

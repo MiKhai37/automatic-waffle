@@ -1,4 +1,5 @@
 import random
+from scrabble_python.errors.scrabble_errors import EmptyPurse
 from scrabble_python.helpers import create_distribution
 from scrabble_python.items.tile import Tile
 from scrabble_python.errors import ScrabbleError
@@ -33,7 +34,9 @@ class Purse:
         return available
 
     def draw(self, n=1):
-        if len(self) < n:
-            raise ScrabbleError(
-                f'Not enough tiles in purse, {len(self)} in the purse')
-        return [self.tiles.pop() for _ in range(n)] if n > 1 else self.tiles.pop()
+        drawn_tiles = []
+        for _ in range(n):
+            if len(self) == 0:
+                raise EmptyPurse
+            drawn_tiles.append(self.tiles.pop())
+        return drawn_tiles

@@ -88,7 +88,7 @@ def test_get_word():
     assert word_on_board == [Word('TEST', (7, 7), 'H')]
 
 
-def test_eq_after_add_remove_tiles():
+def test_no_mutation_after_add_remove_tiles():
     test_board = Board(valid_first_tiles)
     new_tiles = [Tile('O', (8, 7)), Tile('I', (9, 7))]
     old_board = deepcopy(test_board)
@@ -118,7 +118,28 @@ def test_get_new_words_unvalid():
 def test_get_score():
     board = Board()
     score = board.get_score(valid_first_tiles)
-    assert score == (1+1+1+1) * 2 # 1+1+1+1 * 2 
+    assert score == (1+1+1+1) * 2  # 1+1+1+1 * 2
     board.add_tiles(valid_first_tiles)
-    # score = board.get_score([Tile('E'), Tile('T'), Tile()])
-    assert False
+    next_tiles = [Tile('T', (6, 8)), Tile('S', (8, 8)), Tile('T', (9, 8))]
+    score = board.get_score(next_tiles)
+    assert score == (1*2+1+1*2+1)
+    board.add_tiles(next_tiles)
+    next_tiles = [
+        Tile('A', (9, 9)),
+        Tile('L', (9, 10)),
+        Tile('E', (9, 11)),
+        Tile('N', (9, 12)),
+        Tile('T', (9, 13)),
+        Tile('S', (9, 14)),
+    ]
+    score = board.get_score(next_tiles)
+    assert score == (1+1*3+1+1+1+1*3+1)
+    board.add_tiles(next_tiles)
+    next_tiles = [
+        Tile('Y', (6, 14)),
+        Tile('E', (7, 14)),
+        Tile('N', (8, 14)),
+    ]
+    score = board.get_score(next_tiles)
+    assert score == (10+1+1+1) * 3
+    board.add_tiles(next_tiles)

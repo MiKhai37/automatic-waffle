@@ -101,14 +101,14 @@ class Board:
 
         return words
 
-    def get_new_words(self, new_tiles: list[Tile]):
+    def get_new_words(self, tiles_to_add: list[Tile]):
         """
         Return the words formed by the new_tiles, raise an error if one new word is unvalid
         """
         old_words = self.get_words()
-        self.add_tiles(new_tiles)
+        self.add_tiles(tiles_to_add)
         new_words = self.get_words()
-        self.remove_tiles(new_tiles)
+        self.remove_tiles(tiles_to_add)
         for old_word in old_words:
             if old_word in new_words:
                 new_words.remove(old_word)
@@ -118,22 +118,18 @@ class Board:
         return new_words
 
     # TODO: Refactor if possible
-    def get_score(self, new_tiles: list[Tile]):
-        new_words = self.get_new_words(new_tiles)
-        new_tiles_loc = [tile.pos for tile in new_tiles]
+    def get_score(self, tiles_to_add: list[Tile]):
+        new_words = self.get_new_words(tiles_to_add)
+        new_tiles_loc = [tile.pos for tile in tiles_to_add]
         for word in new_words:
             for tile in word.tiles:
                 if tile.pos in new_tiles_loc:
                     if tile.pos in multipliers['letter_double']:
-                        print('letter double')
                         word.score += tile.value
                     if tile.pos in multipliers['letter_triple']:
-                        print('letter triple')
                         word.score += tile.value * 2
                     if tile.pos in multipliers['word_double']:
-                        print('word double')
                         word.score *= 2
                     if tile.pos in multipliers['word_triple']:
-                        print('word triple')
                         word.score *= 3
         return sum(word.score for word in new_words)
