@@ -26,6 +26,9 @@ class Purse:
         return(str(self.get_dist()))
 
     def get_dist(self):
+        """
+        Return the letter distribution in the purse
+        """
         init_dist = create_distribution(lang=self.lang, format='dict')
         available = {}
         for letter in init_dist:

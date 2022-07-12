@@ -41,15 +41,18 @@ class Board:
     def __len__(self):
         return len(self.tiles)
 
+    def __eq__(self, other):
+        return isinstance(other, Board)
+
     def __format_board(self):
+        """
+        Create and return a list representation of the board
+        """
         row = [' '] * self.size
         board = [row.copy() for _ in range(self.size)]
         for tile in self.tiles:
             board[tile.x][tile.y] = tile.letter
         return board
-
-    def __eq__(self, other):
-        return isinstance(other, Board)
 
     def add_tiles(self, tiles_to_add: list[Tile]):
         coords_on_board = [tile.pos for tile in self.tiles]
@@ -75,11 +78,14 @@ class Board:
             self.tiles.remove(tile)
 
     def __get_word_start(self, row_or_col: list[str]):
+        """
+        Return the start postion of words on a row or a column
+        """
         row_or_col = [' '] + row_or_col
         return [i for i, [prev, curr] in enumerate(zip(row_or_col, row_or_col[1:]))
                 if prev == ' ' and curr != ' ']
 
-    def get_words(self) -> list[Word]:
+    def get_words_on_board(self) -> list[Word]:
         """
         Returns list[Word] corresponding to the words present on the board in 
         """
@@ -101,13 +107,13 @@ class Board:
 
         return words
 
-    def get_new_words(self, tiles_to_add: list[Tile]):
+    def get_words_wo_add(self, tiles_to_add: list[Tile]):
         """
-        Return the words formed by the new_tiles, raise an error if one new word is unvalid
+        Return the words formed by the tiles to add without adding them, raise an error if one word is unvalid
         """
-        old_words = self.get_words()
+        old_words = self.get_words_on_board()
         self.add_tiles(tiles_to_add)
-        new_words = self.get_words()
+        new_words = self.get_words_on_board()
         self.remove_tiles(tiles_to_add)
         for old_word in old_words:
             if old_word in new_words:
@@ -119,7 +125,10 @@ class Board:
 
     # TODO: Refactor if possible
     def get_score(self, tiles_to_add: list[Tile]):
-        new_words = self.get_new_words(tiles_to_add)
+        """
+        Compute and return the score marked by the tiles to add
+        """
+        new_words = self.get_words_wo_add(tiles_to_add)
         new_tiles_loc = [tile.pos for tile in tiles_to_add]
         for word in new_words:
             for tile in word.tiles:

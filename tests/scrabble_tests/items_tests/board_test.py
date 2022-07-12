@@ -84,7 +84,7 @@ def test_remove_tiles():
 
 def test_get_word():
     board = Board(valid_first_tiles)
-    word_on_board = board.get_words()
+    word_on_board = board.get_words_on_board()
     assert word_on_board == [Word('TEST', (7, 7), 'H')]
 
 
@@ -101,7 +101,7 @@ def test_get_new_words():
     board = Board(valid_first_tiles)
     new_tiles = [Tile('O', (8, 7)), Tile('I', (9, 7))]
     old_board = deepcopy(board)
-    new_words = board.get_new_words(new_tiles)
+    new_words = board.get_words_wo_add(new_tiles)
     # Mutation check
     assert board == old_board
     assert new_words == [Word('TOI', (7, 7), 'V')]
@@ -111,7 +111,7 @@ def test_get_new_words_unvalid():
     board = Board(valid_first_tiles)
     new_tiles = [Tile('Z', (8, 7)), Tile('W', (9, 7))]
     with pytest.raises(BadWords) as error:
-        board.get_new_words(new_tiles)
+        board.get_words_wo_add(new_tiles)
     assert 'TZW' in (word.text for word in error.value.bad_words)
 
 
