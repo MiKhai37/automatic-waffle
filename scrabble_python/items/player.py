@@ -3,10 +3,7 @@ from .tile import Tile
 
 
 class Player:
-    def __init__(self, player_id: str = None, rack: list[Tile] = None) -> None:
-        if player_id is None:
-            player_id = str(uuid4())
-        self.id = player_id
-        if rack is None:
-            rack = []
-        self.rack = rack
+    def __init__(self, player_id: str = None, score: int = None, rack: list[Tile] = None) -> None:
+        self.player_id = player_id if player_id is not None else str(uuid4())
+        self.rack = rack if rack is not None else []
+        self.score = score if score is not None else 0

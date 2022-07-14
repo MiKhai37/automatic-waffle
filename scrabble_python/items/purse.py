@@ -29,11 +29,7 @@ class Purse:
         Return the letter distribution in the purse
         """
         init_dist = create_distribution(lang=self.lang, format='dict')
-        available = {}
-        for letter in init_dist:
-            count = sum(tile.letter == letter for tile in self.tiles)
-            available[letter] = count
-        return available
+        return {letter: sum(tile.letter == letter for tile in self.tiles) for letter in init_dist}
 
     def draw(self, n=1):
         drawn_tiles = []

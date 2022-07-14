@@ -8,8 +8,6 @@ class Tile:
         self.pos = pos
         if pos is not None:
             self.pos = tuple(pos)
-            self.x = pos[0]
-            self.y = pos[1]
         self.value = self.__get_value()
 
     def __get_value(self):

@@ -1,8 +1,8 @@
 from copy import deepcopy
 
 import pytest
-from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
-                                    ScrabbleError, UnalignedTiles)
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, OutOfBoard,
+                                    ScrabbleError, UnalignedTiles, NoContact)
 from scrabble_python.items import Board, Tile, Word
 
 valid_first_tiles = [
@@ -68,6 +68,31 @@ def test_overlap_add_tiles():
         board.add_tiles(overlap_new_tiles)
     assert err_info.typename == BoardOverlap.__name__
     assert err_info.value.overlap_pos == (7, 7)
+
+
+def test_off_board_add_tiles():
+    board = Board(valid_first_tiles)
+    with pytest.raises(ScrabbleError) as err_info:
+        board.add_tiles([
+            Tile('A', (7, 11)),
+            Tile('M', (7, 12)),
+            Tile('E', (7, 13)),
+            Tile('N', (7, 14)),
+            Tile('T', (7, 15)),
+        ])
+    assert err_info.typename == OutOfBoard.__name__
+
+
+def test_no_contact_add_tiles():
+    board = Board(valid_first_tiles)
+    with pytest.raises(ScrabbleError) as err_info:
+        board.add_tiles([
+            Tile('T', (5, 7)),
+            Tile('E', (5, 8)),
+            Tile('S', (5, 9)),
+            Tile('T', (5, 10))
+        ])
+    assert err_info.typename == NoContact.__name__
 
 
 def test_remove_tiles():

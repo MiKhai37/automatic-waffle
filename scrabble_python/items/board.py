@@ -1,6 +1,6 @@
 from pprint import pformat
 
-from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, OutOfBoard,
                                     ScrabbleError, UnalignedTiles)
 
 from .tile import Tile
@@ -28,13 +28,9 @@ class Board:
     def __init__(self, tiles: list[Tile] = None, size: int = 15) -> None:
         self.size = size
         self.center = self.size // 2
-        if tiles is None:
-            self.tiles = []
-        else:
-            tiles_pos = [tile.pos for tile in tiles]
-            if (self.center, self.center) not in tiles_pos:
-                raise NoCenter
-            self.tiles = tiles.copy()
+        self.tiles = []
+        if tiles is not None:
+            self.add_tiles(tiles)
 
     def __str__(self):
         board = self.__format_board()
@@ -48,12 +44,12 @@ class Board:
 
     def __format_board(self):
         """
-        Create and return a list representation of the board
+        Create and return a representation of the board in a list format
         """
         row = [' '] * self.size
         board = [row.copy() for _ in range(self.size)]
         for tile in self.tiles:
-            board[tile.x][tile.y] = tile.letter
+            board[tile.pos[0]][tile.pos[1]] = tile.letter
         return board
 
     def add_tiles(self, tiles_to_add: list[Tile]):
@@ -61,7 +57,7 @@ class Board:
         coords_to_add = [tile.pos for tile in tiles_to_add]
         xs_to_add = [coord[0] for coord in coords_to_add]
         ys_to_add = [coord[1] for coord in coords_to_add]
-        # First tile must be on center check
+        # First tiles must touch the center
         if len(self) == 0 and (self.center, self.center) not in coords_to_add:
             raise NoCenter
         # Tiles must not overlap
@@ -69,8 +65,11 @@ class Board:
             if coord_to_add in coords_on_board:
                 raise BoardOverlap(overlap_coord=coord_to_add)
         # Tiles must be on same line
-        if max(xs_to_add) - min(xs_to_add) != 0 and max(ys_to_add) - min(ys_to_add) != 0 :
+        if max(xs_to_add) - min(xs_to_add) != 0 and max(ys_to_add) - min(ys_to_add) != 0:
             raise UnalignedTiles
+        # Tiles must be on board:
+        if any(coord<0 or coord>self.size-1 for coord in xs_to_add + ys_to_add):
+            raise OutOfBoard
         self.tiles.extend(tiles_to_add)
 
     def remove_tiles(self, tiles_to_remove: list[Tile]):
@@ -120,12 +119,11 @@ class Board:
         for old_word in old_words:
             if old_word in new_words:
                 new_words.remove(old_word)
-        if unvalid_words := [word for word in new_words if not word]:
-            raise BadWords('Unvalid words detected',
-                                bad_words=unvalid_words,good_words=new_words)
+        if bad_words := [word for word in new_words if not word]:
+            good_words = [word for word in new_words if word]
+            raise BadWords(good_words=good_words, bad_words=bad_words)
         return new_words
 
-    # TODO: Refactor if possible
     def get_score(self, tiles_to_add: list[Tile]):
         """
         Compute and return the score marked by the tiles to add
@@ -133,14 +131,17 @@ class Board:
         new_words = self.get_words_wo_add(tiles_to_add)
         new_tiles_loc = [tile.pos for tile in tiles_to_add]
         for word in new_words:
+            # First compute double/triple letters
             for tile in word.tiles:
                 if tile.pos in new_tiles_loc:
                     if tile.pos in multipliers['letter_double']:
                         word.score += tile.value
                     if tile.pos in multipliers['letter_triple']:
                         word.score += tile.value * 2
-                    if tile.pos in multipliers['word_double']:
-                        word.score *= 2
-                    if tile.pos in multipliers['word_triple']:
-                        word.score *= 3
+            # Then compute double/triple words
+            for tile in word.tiles:
+                if tile.pos in multipliers['word_double']:
+                    word.score *= 2
+                if tile.pos in multipliers['word_triple']:
+                    word.score *= 3
         return sum(word.score for word in new_words)
