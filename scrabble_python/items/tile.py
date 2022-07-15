@@ -21,4 +21,6 @@ class Tile:
         return f'Tile({self.letter}, {self.pos}, {self.lang})'
 
     def __eq__(self, other):
-        return isinstance(other, Tile) and self.letter == other.letter and self.pos == other.pos
+        return isinstance(other, Tile) \
+            and self.letter == other.letter \
+            and self.pos == other.pos

@@ -35,7 +35,10 @@ class Word:
         return self.text.lower() in dico
 
     def __eq__(self, other) -> int:
-        return isinstance(other, Word) and self.text == other.text and self.start == other.start and self.end == other.end
+        return isinstance(other, Word) \
+            and self.text == other.text \
+            and self.start == other.start \
+            and self.end == other.end
 
     def __get_initial_score(self):
         values = [tile.value for tile in self.tiles]

@@ -1,23 +1,16 @@
 from copy import deepcopy
 
 import pytest
-from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, OutOfBoard,
-                                    ScrabbleError, UnalignedTiles, NoContact)
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
+                                    NoContact, OutOfBoard, ScrabbleError,
+                                    UnalignedTiles)
 from scrabble_python.items import Board, Tile, Word
 
-valid_first_tiles = [
-    Tile('T', (7, 7)),
-    Tile('E', (7, 8)),
-    Tile('S', (7, 9)),
-    Tile('T', (7, 10)),
-]
+valid_first_tiles = [Tile('T', (7, 7)), Tile('E', (7, 8)),
+                     Tile('S', (7, 9)), Tile('T', (7, 10))]
 
-unvalid_first_tiles = [
-    Tile('T', (6, 7)),
-    Tile('E', (6, 8)),
-    Tile('S', (6, 9)),
-    Tile('T', (6, 10)),
-]
+unvalid_first_tiles = [Tile('T', (6, 7)), Tile('E', (6, 8)),
+                       Tile('S', (6, 9)), Tile('T', (6, 10))]
 
 
 def test_init_board():
@@ -30,7 +23,7 @@ def test_init_board():
     assert len(valid_board) == 4
     # Unvalid board, no center
     with pytest.raises(ScrabbleError) as err_info:
-        unvalid_board = Board(unvalid_first_tiles)
+        Board(unvalid_first_tiles)
     assert err_info.typename == NoCenter.__name__
 
 
@@ -39,9 +32,8 @@ def test_first_add_tiles():
     board = Board()
     board.add_tiles(valid_first_tiles)
     assert len(board) == 4
-    board = Board()
     with pytest.raises(ScrabbleError) as err_info:
-        board.add_tiles(unvalid_first_tiles)
+        Board().add_tiles(unvalid_first_tiles)
     assert err_info.typename == NoCenter.__name__
 
 
@@ -54,20 +46,23 @@ def test_add_tiles():
 
 def test_unaligned_tiles():
     board = Board()
-    unaligned_tiles = [Tile('T', (7, 7)), Tile('A', (7, 8)), Tile('E', (6, 7))]
     with pytest.raises(ScrabbleError) as err_info:
+        unaligned_tiles = [Tile('T', (7, 7)), Tile('A', (7, 8)),
+                           Tile('E', (6, 7))]
         board.add_tiles(unaligned_tiles)
     assert err_info.typename == UnalignedTiles.__name__
 
-
-def test_overlap_add_tiles():
+@pytest.mark.parametrize('overlap_tiles,overlap_pos', [
+    ([Tile('T', (7, 7)), Tile('O', (8, 7)), Tile('I', (9, 7))], (7, 7)),
+    ([Tile('E', (7, 8)), Tile('T', (8, 8))], (7, 8)),
+    ([Tile('T', (7, 10)), Tile('S', (7, 11))], (7, 10))
+])
+def test_overlap_add_tiles(overlap_tiles, overlap_pos):
     board = Board(valid_first_tiles)
     with pytest.raises(ScrabbleError) as err_info:
-        overlap_new_tiles = [Tile('T', (7, 7)), Tile(
-            'O', (8, 7)), Tile('I', (9, 7))]
-        board.add_tiles(overlap_new_tiles)
+        board.add_tiles(overlap_tiles)
     assert err_info.typename == BoardOverlap.__name__
-    assert err_info.value.overlap_pos == (7, 7)
+    assert err_info.value.overlap_pos == overlap_pos
 
 
 def test_off_board_add_tiles():
@@ -86,12 +81,8 @@ def test_off_board_add_tiles():
 def test_no_contact_add_tiles():
     board = Board(valid_first_tiles)
     with pytest.raises(ScrabbleError) as err_info:
-        board.add_tiles([
-            Tile('T', (5, 7)),
-            Tile('E', (5, 8)),
-            Tile('S', (5, 9)),
-            Tile('T', (5, 10))
-        ])
+        board.add_tiles([Tile('T', (5, 7)), Tile('E', (5, 8)),
+                         Tile('S', (5, 9)), Tile('T', (5, 10))])
     assert err_info.typename == NoContact.__name__
 
 
@@ -102,12 +93,11 @@ def test_remove_tiles():
     # Error raise if remove unexistant tile
     with pytest.raises(ScrabbleError):
         board.remove_tiles([Tile('T', (6, 10))])
-    assert len(board) == 3
 
 
 def test_get_word():
     board = Board(valid_first_tiles)
-    word_on_board = board.get_words_on_board()
+    word_on_board = board.get_words()
     assert word_on_board == [Word('TEST', (7, 7), 'H')]
 
 
@@ -116,6 +106,7 @@ def test_no_mutation_after_add_remove_tiles():
     new_tiles = [Tile('O', (8, 7)), Tile('I', (9, 7))]
     old_board = deepcopy(test_board)
     test_board.add_tiles(new_tiles)
+    assert test_board != old_board
     test_board.remove_tiles(new_tiles)
     assert test_board == old_board
 
@@ -123,46 +114,39 @@ def test_no_mutation_after_add_remove_tiles():
 def test_get_new_words():
     board = Board(valid_first_tiles)
     new_tiles = [Tile('O', (8, 7)), Tile('I', (9, 7))]
-    old_board = deepcopy(board)
-    new_words = board.get_words_wo_add(new_tiles)
-    # Mutation check
-    assert board == old_board
+    new_words = board.get_next_words(new_tiles)
     assert new_words == [Word('TOI', (7, 7), 'V')]
+    board.add_tiles(new_tiles)
+    new_tiles = [Tile('N', (8, 8))]
+    new_words = board.get_next_words(new_tiles)
+    new_word_texts = [word.text for word in new_words]
+    assert all(word in new_word_texts for word in ['ON', 'EN'])
 
 
 def test_get_new_words_unvalid():
     board = Board(valid_first_tiles)
     new_tiles = [Tile('Z', (8, 7)), Tile('W', (9, 7))]
-    with pytest.raises(BadWords) as error:
-        board.get_words_wo_add(new_tiles)
-    assert 'TZW' in (word.text for word in error.value.bad_words)
+    with pytest.raises(ScrabbleError) as err_info:
+        board.get_next_words(new_tiles)
+    assert err_info.typename == BadWords.__name__
+    assert 'TZW' in (word.text for word in err_info.value.bad_words)
 
 
 def test_get_score():
     board = Board()
     score = board.get_score(valid_first_tiles)
-    assert score == (1+1+1+1) * 2  # 1+1+1+1 * 2
     board.add_tiles(valid_first_tiles)
+    assert score == (1+1+1+1) * 2  # 1+1+1+1 * 2
     next_tiles = [Tile('T', (6, 8)), Tile('S', (8, 8)), Tile('T', (9, 8))]
     score = board.get_score(next_tiles)
+    board.add_tiles(next_tiles)
     assert score == (1*2+1+1*2+1)
-    board.add_tiles(next_tiles)
-    next_tiles = [
-        Tile('A', (9, 9)),
-        Tile('L', (9, 10)),
-        Tile('E', (9, 11)),
-        Tile('N', (9, 12)),
-        Tile('T', (9, 13)),
-        Tile('S', (9, 14)),
-    ]
+    next_tiles = [Tile('A', (9, 9)), Tile('L', (9, 10)), Tile('E', (9, 11)),
+                  Tile('N', (9, 12)), Tile('T', (9, 13)), Tile('S', (9, 14))]
     score = board.get_score(next_tiles)
+    board.add_tiles(next_tiles)
     assert score == (1+1*3+1+1+1+1*3+1)
-    board.add_tiles(next_tiles)
-    next_tiles = [
-        Tile('Y', (6, 14)),
-        Tile('E', (7, 14)),
-        Tile('N', (8, 14)),
-    ]
+    next_tiles = [Tile('Y', (6, 14)), Tile('E', (7, 14)), Tile('N', (8, 14))]
     score = board.get_score(next_tiles)
-    assert score == (10+1+1+1) * 3
     board.add_tiles(next_tiles)
+    assert score == (10+1+1+1) * 3

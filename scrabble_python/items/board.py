@@ -1,6 +1,6 @@
 from pprint import pformat
 
-from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, OutOfBoard,
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, NoContact, OutOfBoard,
                                     ScrabbleError, UnalignedTiles)
 
 from .tile import Tile
@@ -26,59 +26,78 @@ word_multipliers = {
 
 class Board:
     def __init__(self, tiles: list[Tile] = None, size: int = 15) -> None:
-        self.size = size
-        self.center = self.size // 2
-        self.tiles = []
+        self.SIZE = size
+        self.CENTER = self.SIZE // 2
+        self.tiles: list[Tile] = []
         if tiles is not None:
             self.add_tiles(tiles)
 
-    def __str__(self):
+    def __str__(self) -> str:
         board = self.__format_board()
         return pformat(board)
 
-    def __len__(self):
+    def __repr__(self) -> str:
+        return str(self.get_words())
+
+    def __len__(self) -> int:
         return len(self.tiles)
 
-    def __eq__(self, other):
-        return isinstance(other, Board)
+    def __eq__(self, other) -> bool:
+        s_words = self.get_words()
+        o_words = other.get_words()
+        return isinstance(other, Board) \
+            and all(word in o_words for word in s_words) \
+            and all(word in s_words for word in o_words)
 
-    def __format_board(self):
+    def __format_board(self) -> list[list[str]]:
         """
         Create and return a representation of the board in a list format
         """
-        row = [' '] * self.size
-        board = [row.copy() for _ in range(self.size)]
+        row = [' '] * self.SIZE
+        board = [row.copy() for _ in range(self.SIZE)]
         for tile in self.tiles:
             board[tile.pos[0]][tile.pos[1]] = tile.letter
         return board
 
-    def add_tiles(self, tiles_to_add: list[Tile]):
-        coords_on_board = [tile.pos for tile in self.tiles]
-        coords_to_add = [tile.pos for tile in tiles_to_add]
-        xs_to_add = [coord[0] for coord in coords_to_add]
-        ys_to_add = [coord[1] for coord in coords_to_add]
-        # First tiles must touch the center
-        if len(self) == 0 and (self.center, self.center) not in coords_to_add:
-            raise NoCenter
-        # Tiles must not overlap
-        for coord_to_add in coords_to_add:
-            if coord_to_add in coords_on_board:
-                raise BoardOverlap(overlap_coord=coord_to_add)
-        # Tiles must be on same line
-        if max(xs_to_add) - min(xs_to_add) != 0 and max(ys_to_add) - min(ys_to_add) != 0:
-            raise UnalignedTiles
-        # Tiles must be on board:
-        if any(coord<0 or coord>self.size-1 for coord in xs_to_add + ys_to_add):
+    def add_tiles(self, tiles_to_add: list[Tile]) -> None:
+        board_tiles_pos = [tile.pos for tile in self.tiles]
+        tiles_to_add_pos = [tile.pos for tile in tiles_to_add]
+        xs = [pos[0] for pos in tiles_to_add_pos]
+        ys = [pos[1] for pos in tiles_to_add_pos]
+        # Added tiles must be on board:
+        if any(coord < 0 or coord > self.SIZE-1 for coord in xs + ys):
             raise OutOfBoard
+        # First added tiles must hit the center
+        if len(self) == 0 and (self.CENTER, self.CENTER) not in tiles_to_add_pos:
+            raise NoCenter
+        # Added tiles must not overlap
+        for coord_to_add in tiles_to_add_pos:
+            if coord_to_add in board_tiles_pos:
+                raise BoardOverlap(overlap_coord=coord_to_add)
+        # Added tiles must be on same line
+        if max(xs) - min(xs) != 0 and max(ys) - min(ys) != 0:
+            raise UnalignedTiles
+        # Added tiles must be in contact with board tiles
+        if len(self) != 0 and not self.check_contact(tiles_to_add):
+            raise NoContact
         self.tiles.extend(tiles_to_add)
 
-    def remove_tiles(self, tiles_to_remove: list[Tile]):
+    def check_contact(self, tiles_to_add):
+        board_tiles_pos = [tile.pos for tile in self.tiles]
+        plus_x_pos = [(pos[0] + 1, pos[1]) for pos in board_tiles_pos]
+        minus_x_pos = [(pos[0] - 1, pos[1]) for pos in board_tiles_pos]
+        plus_y_pos = [(pos[0], pos[1] + 1) for pos in board_tiles_pos]
+        minus_y_pos = [(pos[0], pos[1] - 1) for pos in board_tiles_pos]
+        contact_pos = set(plus_x_pos + minus_x_pos + plus_y_pos + minus_y_pos)
+        return any(tile.pos in contact_pos for tile in tiles_to_add)
+
+    def remove_tiles(self, tiles_to_remove: list[Tile]) -> None:
         for tile in tiles_to_remove:
             if tile not in self.tiles:
                 raise ScrabbleError('tile not in board tiles')
             self.tiles.remove(tile)
 
-    def __get_word_start(self, row_or_col: list[str]):
+    def __get_word_start(self, row_or_col: list[str]) -> list[int]:
         """
         Return the start postion of words on a row or a column
         """
@@ -86,62 +105,60 @@ class Board:
         return [i for i, [prev, curr] in enumerate(zip(row_or_col, row_or_col[1:]))
                 if prev == ' ' and curr != ' ']
 
-    def get_words_on_board(self) -> list[Word]:
+    def get_words(self) -> list[Word]:
         """
-        Returns list[Word] corresponding to the words present on the board in 
+        Return list[Word] corresponding to the words present on the board in
         """
         rows = self.__format_board()
-        cols = [[row[i] for row in rows] for i in range(len(rows[0]))]
+        cols = [[row[i] for row in rows] for i in range(self.SIZE)]
         words = []
         for x, row in enumerate(rows):
-            row_word = ''.join(row).split()
+            row_words = ''.join(row).split()
             row_index = self.__get_word_start(row)
             row_coords = [*zip([x]*len(row_index), row_index)]
-            words.append([*zip(row_word, row_coords, ['H']*len(row_word))])
+            words.extend([*zip(row_words, row_coords, ['H']*len(row_words))])
         for y, col in enumerate(cols):
-            col_word = ''.join(col).split()
+            col_words = ''.join(col).split()
             col_index = self.__get_word_start(col)
             col_coords = [*zip(col_index, [y]*len(col_index))]
-            words.append([*zip(col_word, col_coords, ['V']*len(col_word))])
-        words = sum(words, [])
-        words = [Word(*word) for word in words if len(word[0]) > 1]
+            words.extend([*zip(col_words, col_coords, ['V']*len(col_words))])
 
-        return words
+        return [Word(*word) for word in words if len(word[0]) > 1]
 
-    def get_words_wo_add(self, tiles_to_add: list[Tile]):
+    def get_next_words(self, tiles_to_add: list[Tile]) -> list[Word]:
         """
-        Return the words formed by the tiles to add without adding them, raise an error if one word is unvalid
+        Return the words formed by the tiles to add without adding them
+        Raise a BadWords Error if one word is unvalid
         """
-        old_words = self.get_words_on_board()
+        prev_words = self.get_words()
         self.add_tiles(tiles_to_add)
-        new_words = self.get_words_on_board()
+        curr_words = self.get_words()
         self.remove_tiles(tiles_to_add)
-        for old_word in old_words:
-            if old_word in new_words:
-                new_words.remove(old_word)
-        if bad_words := [word for word in new_words if not word]:
-            good_words = [word for word in new_words if word]
+        next_words = [word for word in curr_words if word not in prev_words]
+        if bad_words := [word for word in next_words if not word]:
+            good_words = [word for word in next_words if word]
             raise BadWords(good_words=good_words, bad_words=bad_words)
-        return new_words
+        return next_words
 
-    def get_score(self, tiles_to_add: list[Tile]):
+    def get_score(self, tiles_to_add: list[Tile]) -> int:
         """
         Compute and return the score marked by the tiles to add
         """
-        new_words = self.get_words_wo_add(tiles_to_add)
-        new_tiles_loc = [tile.pos for tile in tiles_to_add]
-        for word in new_words:
+        next_words = self.get_next_words(tiles_to_add)
+        next_pos = [tile.pos for tile in tiles_to_add]
+        for word in next_words:
             # First compute double/triple letters
             for tile in word.tiles:
-                if tile.pos in new_tiles_loc:
+                if tile.pos in next_pos:
                     if tile.pos in multipliers['letter_double']:
                         word.score += tile.value
                     if tile.pos in multipliers['letter_triple']:
                         word.score += tile.value * 2
             # Then compute double/triple words
             for tile in word.tiles:
-                if tile.pos in multipliers['word_double']:
-                    word.score *= 2
-                if tile.pos in multipliers['word_triple']:
-                    word.score *= 3
-        return sum(word.score for word in new_words)
+                if tile.pos in next_pos:
+                    if tile.pos in multipliers['word_double']:
+                        word.score *= 2
+                    if tile.pos in multipliers['word_triple']:
+                        word.score *= 3
+        return sum((word.score for word in next_words), 0)

@@ -7,3 +7,6 @@ class Player:
         self.player_id = player_id if player_id is not None else str(uuid4())
         self.rack = rack if rack is not None else []
         self.score = score if score is not None else 0
+
+    def __repr__(self) -> str:
+        return f'Player: {self.player_id}, {self.score}, {self.rack}'
