@@ -1,8 +1,9 @@
-from pprint import pformat
 from itertools import repeat
+from pprint import pformat
 
-from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, NoContact, OutOfBoard,
-                                    ScrabbleError, UnalignedTiles)
+from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
+                                    NoContact, OutOfBoard, ScrabbleError,
+                                    UnalignedTiles)
 
 from .tile import Tile
 from .word import Word
@@ -76,13 +77,30 @@ class Board:
         self.tiles.extend(tiles_to_add)
 
     def check_contact(self, tiles_to_add):
-        board_tiles_pos = [tile.pos for tile in self.tiles]
-        plus_x_pos = [(pos[0] + 1, pos[1]) for pos in board_tiles_pos]
-        minus_x_pos = [(pos[0] - 1, pos[1]) for pos in board_tiles_pos]
-        plus_y_pos = [(pos[0], pos[1] + 1) for pos in board_tiles_pos]
-        minus_y_pos = [(pos[0], pos[1] - 1) for pos in board_tiles_pos]
+        board_pos = [tile.pos for tile in self.tiles]
+        plus_x_pos = [(pos[0] + 1, pos[1]) for pos in board_pos]
+        minus_x_pos = [(pos[0] - 1, pos[1]) for pos in board_pos]
+        plus_y_pos = [(pos[0], pos[1] + 1) for pos in board_pos]
+        minus_y_pos = [(pos[0], pos[1] - 1) for pos in board_pos]
         contact_pos = set(plus_x_pos + minus_x_pos + plus_y_pos + minus_y_pos)
-        return any(tile.pos in contact_pos for tile in tiles_to_add)
+        if all(tile.pos not in contact_pos for tile in tiles_to_add):
+            return False
+
+        add_pos = [tile.pos for tile in tiles_to_add]
+        xs = [pos[0] for pos in add_pos]
+        ys = [pos[1] for pos in add_pos]
+        x_min, x_max = min(xs), max(xs)
+        y_min, y_max = min(ys), max(ys)
+        x_diff = x_max - x_min
+        y_diff = y_max - y_min
+        if x_diff == 0:
+            x = repeat(x_min, y_diff)
+            y = range(y_min, y_max+1)
+        else:
+            x = range(x_min, x_max+1)
+            y = repeat(y_min, x_diff)
+        return all(pos in add_pos + board_pos for pos in [*zip(x, y)])
+
 
     def remove_tiles(self, tiles_to_remove: list[Tile]) -> None:
         for tile in tiles_to_remove:
@@ -95,8 +113,8 @@ class Board:
         Return the start postion of words on a row or a column
         """
         row_or_col = [' '] + row_or_col
-        return [i for i, [prev, curr] in enumerate(zip(row_or_col, row_or_col[1:]))
-                if prev == ' ' and curr != ' ']
+        prev_curr = zip(row_or_col, row_or_col[1:])
+        return [i for i, [prev, curr] in enumerate(prev_curr) if prev == ' ' and curr != ' ']
 
     def get_words(self) -> list[Word]:
         """
@@ -107,13 +125,13 @@ class Board:
         words = []
         for x, row in enumerate(rows):
             row_index = self.__get_word_start(row)
-            row_pos = zip(repeat(x, len(row_index)), row_index)
-            words.extend(zip(''.join(row).split(), row_pos,
+            words_start = zip(repeat(x, len(row_index)), row_index)
+            words.extend(zip(''.join(row).split(), words_start,
                          repeat('H', len(row_index))))
         for y, col in enumerate(cols):
             col_index = self.__get_word_start(col)
-            col_pos = zip(col_index, repeat(y, len(col_index)))
-            words.extend(zip(''.join(col).split(), col_pos,
+            words_start = zip(col_index, repeat(y, len(col_index)))
+            words.extend(zip(''.join(col).split(), words_start,
                          repeat('V', len(col_index))))
 
         return [Word(*word) for word in words if len(word[0]) > 1]
@@ -135,7 +153,7 @@ class Board:
             raise ScrabbleError('No words')
         return next_words
 
-    def get_points(self, next_tiles: list[Tile]) -> int:
+    def compute_score(self, next_tiles: list[Tile]) -> int:
         """
         Compute and return the score marked by the tiles to add
         """

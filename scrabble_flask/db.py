@@ -16,13 +16,10 @@ def get_mongo_db(collection: str) -> MongoAPI:
 
 # TODO fix close the connection
 def close_mongo_db(e=None):
-    mongo_colls = [
-        g.pop('players_db', None),
-        g.pop('games_db', None),
-        g.pop('plays_db', None)
-    ]
+    coll_names = ['players_db', 'games_db', 'plays_db']
+    mongo_colls = [g.pop(coll_name, None) for coll_name in coll_names]
     for mongo in [mongo for mongo in mongo_colls if mongo is not None]:
-        current_app.logger.debug(f'MONGODB Closed {mongo.collection.name}')
+        current_app.logger.debug(f'MONGODB {mongo.collection.name} Closed')
         mongo.close_db()
 
 

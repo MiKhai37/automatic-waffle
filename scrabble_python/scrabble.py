@@ -61,7 +61,7 @@ class Scrabble:
 
     def save_move(self, move) -> None:
         new_words = self.board.get_next_words(move)
-        scored_points = self.board.get_points(move)
+        scored_points = self.board.compute_score(move)
         self.history[self.turn] = new_words
         self.players[self.turn_id].score += scored_points
         self.board.add_tiles(move)

@@ -80,7 +80,7 @@ def test_off_board_add_tiles(test_board: Board):
 @pytest.mark.parametrize('no_contact_tiles', [
     [Tile('T', (5, 7)), Tile('E', (5, 8)),
      Tile('S', (5, 9)), Tile('T', (5, 10))],
-    [Tile('S', (7, 11)), Tile('S', (7, 13))]
+    [Tile('S', (7, 11)), Tile('S', (7, 13)), Tile('I', (7, 14))]
     
 ])
 def test_no_contact_add_tiles(test_board: Board, no_contact_tiles):
@@ -139,5 +139,5 @@ def test_get_new_words_unvalid(test_board: Board):
     ([Tile('Y', (6, 14)), Tile('E', (7, 14)), Tile('N', (8, 14))], (10+1+1+1)*3)
 ])
 def test_get_score(empty_test_board: Board, next_tiles, points):
-    assert empty_test_board.get_points(next_tiles) == points
+    assert empty_test_board.compute_score(next_tiles) == points
     empty_test_board.add_tiles(next_tiles)
