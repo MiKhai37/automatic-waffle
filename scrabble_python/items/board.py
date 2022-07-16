@@ -7,19 +7,12 @@ from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter, NoContact,
 from .tile import Tile
 from .word import Word
 
-multipliers = {
-    'word_triple': [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)],
-    'word_double': [(1, 1), (1, 13), (2, 2), (2, 12), (3, 3), (3, 11), (4, 4), (4, 10), (7, 7), (10, 4), (10, 10), (11, 3), (11, 11), (12, 2), (12, 12), (13, 1), (13, 13)],
-    'letter_triple': [(1, 5), (1, 9), (5, 1), (5, 5), (5, 9), (5, 13), (9, 1), (9, 5), (9, 9), (9, 13), (13, 5), (13, 9)],
-    'letter_double': [(0, 3), (0, 11), (2, 6), (2, 8), (3, 0), (3, 7), (3, 14), (6, 2), (6, 6), (6, 8), (6, 12), (7, 3), (7, 11), (8, 2), (8, 6), (8, 8), (8, 12), (11, 0), (11, 7), (11, 14), (12, 6), (12, 8), (14, 3), (14, 11)]
-}
-
-letter_multipliers = {
+letter_magic = {
     3: [(1, 5), (1, 9), (5, 1), (5, 5), (5, 9), (5, 13), (9, 1), (9, 5), (9, 9), (9, 13), (13, 5), (13, 9)],
     2: [(0, 3), (0, 11), (2, 6), (2, 8), (3, 0), (3, 7), (3, 14), (6, 2), (6, 6), (6, 8), (6, 12), (7, 3), (7, 11), (8, 2), (8, 6), (8, 8), (8, 12), (11, 0), (11, 7), (11, 14), (12, 6), (12, 8), (14, 3), (14, 11)]
 }
 
-word_multipliers = {
+word_magic = {
     3: [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)],
     2: [(1, 1), (1, 13), (2, 2), (2, 12), (3, 3), (3, 11), (4, 4), (4, 10), (7, 7), (10, 4), (10, 10), (11, 3), (11, 11), (12, 2), (12, 12), (13, 1), (13, 13)],
 }
@@ -61,18 +54,18 @@ class Board:
         return board
 
     def add_tiles(self, tiles_to_add: list[Tile]) -> None:
-        board_tiles_pos = [tile.pos for tile in self.tiles]
-        tiles_to_add_pos = [tile.pos for tile in tiles_to_add]
-        xs = [pos[0] for pos in tiles_to_add_pos]
-        ys = [pos[1] for pos in tiles_to_add_pos]
+        board_pos = [tile.pos for tile in self.tiles]
+        add_pos = [tile.pos for tile in tiles_to_add]
+        xs = [pos[0] for pos in add_pos]
+        ys = [pos[1] for pos in add_pos]
         # Added tiles must be on board:
         if any(coord < 0 or coord > self.SIZE-1 for coord in xs + ys):
             raise OutOfBoard
         # First added tiles must hit the center
-        if len(self) == 0 and (self.CENTER, self.CENTER) not in tiles_to_add_pos:
+        if len(self) == 0 and (self.CENTER, self.CENTER) not in add_pos:
             raise NoCenter
         # Added tiles must not overlap
-        if any(coord_to_add in board_tiles_pos for coord_to_add in tiles_to_add_pos):
+        if any(coord_to_add in board_pos for coord_to_add in add_pos):
             raise BoardOverlap
         # Added tiles must be on same line
         if max(xs) - min(xs) != 0 and max(ys) - min(ys) != 0:
@@ -114,12 +107,14 @@ class Board:
         words = []
         for x, row in enumerate(rows):
             row_index = self.__get_word_start(row)
-            row_pos = zip(repeat(x,len(row_index)), row_index)
-            words.extend(zip(''.join(row).split(), row_pos, repeat('H',len(row_index))))
+            row_pos = zip(repeat(x, len(row_index)), row_index)
+            words.extend(zip(''.join(row).split(), row_pos,
+                         repeat('H', len(row_index))))
         for y, col in enumerate(cols):
             col_index = self.__get_word_start(col)
-            col_pos = zip(col_index, repeat(y,len(col_index)))
-            words.extend(zip(''.join(col).split(), col_pos, repeat('V',len(col_index))))
+            col_pos = zip(col_index, repeat(y, len(col_index)))
+            words.extend(zip(''.join(col).split(), col_pos,
+                         repeat('V', len(col_index))))
 
         return [Word(*word) for word in words if len(word[0]) > 1]
 
@@ -148,17 +143,19 @@ class Board:
         next_pos = [tile.pos for tile in next_tiles]
         for word in next_words:
             # First compute double/triple letters
-            for tile in word.tiles:
-                if tile.pos in next_pos:
-                    if tile.pos in multipliers['letter_double']:
-                        word.score += tile.value
-                    if tile.pos in multipliers['letter_triple']:
-                        word.score += tile.value * 2
+            word_add_tiles = [
+                tile for tile in word.tiles if tile.pos in next_pos]
+            for tile in word_add_tiles:
+                magic_letter_pos = sum(letter_magic.values(), [])
+                if tile.pos in magic_letter_pos:
+                    mult = [mult for mult in letter_magic.keys(
+                    ) if tile.pos in letter_magic[mult]][0]
+                    word.score += tile.value * (mult - 1)
             # Then compute double/triple words
-            for tile in word.tiles:
-                if tile.pos in next_pos:
-                    if tile.pos in multipliers['word_double']:
-                        word.score *= 2
-                    if tile.pos in multipliers['word_triple']:
-                        word.score *= 3
+            for tile in word_add_tiles:
+                magic_word_pos = sum(word_magic.values(), [])
+                if tile.pos in magic_word_pos:
+                    mult = [mult for mult in word_magic.keys(
+                    ) if tile.pos in word_magic[mult]][0]
+                    word.score *= mult
         return sum((word.score for word in next_words), 0)
