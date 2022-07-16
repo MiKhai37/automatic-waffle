@@ -39,5 +39,5 @@ def test_unvalid_lang():
         Scrabble(lang='jklhsqd')
     assert 'jklhsqd' in str(excinfo.value)
 
-def test_submit(scrabble_game):
+def test_submit(test_scrabble):
     pass

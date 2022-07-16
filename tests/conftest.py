@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 
 import pytest
 from flask import Flask
@@ -6,27 +7,7 @@ from flask.testing import FlaskClient
 from pymongo import InsertOne, MongoClient
 from scrabble_flask import create_app
 from scrabble_python import Scrabble
-from scrabble_python.items import Player
-from scrabble_python.items.purse import Purse
-from scrabble_python.items.tile import Tile
-
-
-@pytest.fixture(scope='session')
-def app() -> Flask:
-    """
-    Create an app fixture for testing, which use a specific testing database
-    """
-    app = create_app({'TESTING': True, 'DB_NAME': 'Testing'})
-    populate_test_db()
-    return app
-
-
-@pytest.fixture(scope='session')
-def client(app: Flask) -> FlaskClient:
-    """
-    Create a test client to remplace the browser during test
-    """
-    return app.test_client()
+from scrabble_python.items import Board, Player, Purse, Tile
 
 
 def populate_test_db() -> None:
@@ -53,7 +34,24 @@ def populate_test_db() -> None:
 
 
 @pytest.fixture(scope='session')
-def scrabble_game() -> Scrabble:
+def app() -> Flask:
+    """
+    Create an app fixture for testing, which use a specific testing database
+    """
+    populate_test_db()
+    return create_app({'TESTING': True, 'DB_NAME': 'Testing'})
+
+
+@pytest.fixture(scope='session')
+def client(app: Flask) -> FlaskClient:
+    """
+    Create a test client to remplace the browser during test
+    """
+    return app.test_client()
+
+
+@pytest.fixture(scope='session')
+def test_scrabble() -> Scrabble:
     """
     Create a scrabble game fixture for testing purpose
     """
@@ -70,8 +68,23 @@ def scrabble_game() -> Scrabble:
 
 @pytest.fixture(scope='session')
 def fake_purse() -> Purse:
-    tiles = [
-        Tile(),
-        Tile(),
-    ]
-    return Purse(tiles, 'fr')
+    p1_letters = ['M', 'A', 'I', 'S', 'O', 'N']
+    p2_letters = ['O', 'U', 'P', 'E']
+    p1_tiles = [Tile(letter) for letter in p1_letters]
+    p2_tiles = [Tile(letter) for letter in p2_letters]
+    purse_tile = list(chain.from_iterable(zip(p1_tiles, p2_tiles)))
+    return Purse(purse_tile, 'fr')
+
+
+@pytest.fixture(scope='session')
+def empty_test_board() -> Board:
+    """An empty test board"""
+    return Board()
+
+
+@pytest.fixture(scope='function')
+def test_board():
+    """A test board with the word test placed in the center"""
+    first_tiles = [Tile('T', (7, 7)), Tile('E', (7, 8)),
+                   Tile('S', (7, 9)), Tile('T', (7, 10))]
+    return Board(first_tiles)

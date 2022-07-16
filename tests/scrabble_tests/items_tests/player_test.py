@@ -10,6 +10,6 @@ def test_init_player():
 
 def test_player():
     player = Player(player_id='id_str', score=5, rack=[Tile('A'), Tile('B')])
-    assert player.player_id == 'id_str'
+    assert player.ID == 'id_str'
     assert player.score == 5
     assert len(player.rack) == 2

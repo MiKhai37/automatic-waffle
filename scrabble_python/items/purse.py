@@ -6,11 +6,11 @@ from .tile import Tile
 
 class Purse:
     def __init__(self, tiles: list[Tile] = None, lang: str = 'fr') -> None:
-        self.lang = lang
+        self.LANG = lang
         self.tiles = self.__init_purse() if tiles is None else tiles.copy()
 
     def __init_purse(self) -> list[Tile]:
-        init_dist = create_distribution(self.lang, 'dict')
+        init_dist = create_distribution(self.LANG, 'dict')
         initial_purse = []
         for letter in init_dist:
             initial_purse.extend([Tile(letter)] * init_dist[letter]['count'])
@@ -24,13 +24,16 @@ class Purse:
         return(str(self.get_dist()))
 
     def __repr__(self) -> str:
-        return(f'Purse: {str(self.get_dist())}')
+        return(f'Purse({str(self.get_dist())})')
+
+    def __eq__(self, __o: object) -> bool:
+        return isinstance(__o, Purse) and self.get_dist() == __o.get_dist()
 
     def get_dist(self) -> dict:
         """
         Return the letter distribution in the purse
         """
-        init_dist = create_distribution(lang=self.lang, format='dict')
+        init_dist = create_distribution(lang=self.LANG, format='dict')
         return {letter: sum(tile.letter == letter for tile in self.tiles) for letter in init_dist}
 
     def draw(self, n=1) -> list[Tile]:

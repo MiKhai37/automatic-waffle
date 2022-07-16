@@ -28,9 +28,8 @@ class UnalignedTiles(ScrabbleError):
 
 
 class BoardOverlap(ScrabbleError):
-    def __init__(self, overlap_coord: tuple) -> None:
+    def __init__(self) -> None:
         super().__init__('Added tiles must not overlap board tiles')
-        self.overlap_pos = overlap_coord
 
 
 class NoContact(ScrabbleError):
@@ -48,3 +47,7 @@ class BadWords(ScrabbleError):
         super().__init__('Some words do not exist')
         self.good_words = good_words
         self.bad_words = bad_words
+
+class NotInRack(ScrabbleError):
+    def __init__(self, *args: object) -> None:
+        super().__init__('You do not have the tile')
