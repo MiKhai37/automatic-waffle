@@ -77,10 +77,14 @@ def test_off_board_add_tiles(test_board: Board):
     assert err_info.typename == OutOfBoard.__name__
 
 
-def test_no_contact_add_tiles(test_board: Board):
+@pytest.mark.parametrize('no_contact_tiles', [
+    [Tile('T', (5, 7)), Tile('E', (5, 8)),
+     Tile('S', (5, 9)), Tile('T', (5, 10))],
+    [Tile('S', (7, 11)), Tile('S', (7, 13))]
+    
+])
+def test_no_contact_add_tiles(test_board: Board, no_contact_tiles):
     with pytest.raises(ScrabbleError) as err_info:
-        no_contact_tiles = [Tile('T', (5, 7)), Tile('E', (5, 8)),
-                            Tile('S', (5, 9)), Tile('T', (5, 10))]
         test_board.add_tiles(no_contact_tiles)
     assert err_info.typename == NoContact.__name__
 

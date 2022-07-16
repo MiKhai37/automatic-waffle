@@ -136,6 +136,8 @@ class Board:
         if bad_words := [word for word in next_words if not word]:
             good_words = [word for word in next_words if word]
             raise BadWords(good_words=good_words, bad_words=bad_words)
+        if not next_words:
+            raise ScrabbleError('No words')
         return next_words
 
     def get_points(self, next_tiles: list[Tile]) -> int:
