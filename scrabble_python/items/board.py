@@ -101,20 +101,23 @@ class Board:
             y = repeat(y_min, x_diff)
         return all(pos in add_pos + board_pos for pos in [*zip(x, y)])
 
-
     def remove_tiles(self, tiles_to_remove: list[Tile]) -> None:
         for tile in tiles_to_remove:
             if tile not in self.tiles:
                 raise ScrabbleError('tile not in board tiles')
             self.tiles.remove(tile)
 
-    def __get_word_start(self, row_or_col: list[str]) -> list[int]:
+    def __get_word_start(self, line: list[str], line_idx, row_or_col) -> list[int]:
         """
-        Return the start postion of words on a row or a column
+        Return the start postion of words on a line
         """
-        row_or_col = [' '] + row_or_col
-        prev_curr = zip(row_or_col, row_or_col[1:])
-        return [i for i, [prev, curr] in enumerate(prev_curr) if prev == ' ' and curr != ' ']
+        line = [' '] + line
+        prev_curr = zip(line, line[1:])
+
+        if row_or_col == 'row':
+            return [(line_idx, i) for i, [prev, curr] in enumerate(prev_curr) if prev == ' ' and curr != ' ']
+        if row_or_col == 'col':
+            return [(i, line_idx) for i, [prev, curr] in enumerate(prev_curr) if prev == ' ' and curr != ' ']
 
     def get_words(self) -> list[Word]:
         """
@@ -122,19 +125,19 @@ class Board:
         """
         rows = self.__format_board()
         cols = [[row[i] for row in rows] for i in range(self.SIZE)]
-        words = []
+        words_args = []
         for x, row in enumerate(rows):
-            row_index = self.__get_word_start(row)
-            words_start = zip(repeat(x, len(row_index)), row_index)
-            words.extend(zip(''.join(row).split(), words_start,
-                         repeat('H', len(row_index))))
+            words_text = ''.join(row).split()
+            words_start = self.__get_word_start(row, x, 'row')
+            words_args.extend(zip(words_text, words_start,
+                                  repeat('H', len(words_start))))
         for y, col in enumerate(cols):
-            col_index = self.__get_word_start(col)
-            words_start = zip(col_index, repeat(y, len(col_index)))
-            words.extend(zip(''.join(col).split(), words_start,
-                         repeat('V', len(col_index))))
+            words_text = ''.join(col).split()
+            words_start = self.__get_word_start(col, y, 'col')
+            words_args.extend(zip(words_text, words_start,
+                              repeat('V', len(words_start))))
 
-        return [Word(*word) for word in words if len(word[0]) > 1]
+        return [Word(*word_arg) for word_arg in words_args if len(word_arg[0]) > 1]
 
     def get_next_words(self, next_tiles: list[Tile]) -> list[Word]:
         """
