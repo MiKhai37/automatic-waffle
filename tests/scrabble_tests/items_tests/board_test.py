@@ -4,7 +4,7 @@ import pytest
 from scrabble_python.errors import (BadWords, BoardOverlap, NoCenter,
                                     NoContact, OutOfBoard, ScrabbleError,
                                     UnalignedTiles)
-from scrabble_python.items import Board, Tile, Word
+from scrabble_python import Board, Tile, Word
 
 
 def test_init_board():

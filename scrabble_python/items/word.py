@@ -19,7 +19,7 @@ class Word:
             self.tiles = [Tile(lettre, (start[0] + i, start[1]))
                           for (i, lettre) in enumerate(self.text)]
         self.end = self.tiles[-1].pos
-        self.score = self.__get_initial_score()
+        self.score = self.get_initial_score()
 
     def __str__(self) -> str:
         return f'{self.text}: {self.start} -> {self.end}'
@@ -40,6 +40,6 @@ class Word:
             and self.start == other.start \
             and self.end == other.end
 
-    def __get_initial_score(self):
+    def get_initial_score(self):
         values = [tile.value for tile in self.tiles]
         return sum(values)

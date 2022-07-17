@@ -1,5 +1,4 @@
-from scrabble_python.items import Player
-from scrabble_python.items.tile import Tile
+from scrabble_python import Player, Tile
 
 
 def test_init_player():

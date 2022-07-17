@@ -6,8 +6,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 from pymongo import InsertOne, MongoClient
 from scrabble_flask import create_app
-from scrabble_python import Scrabble
-from scrabble_python.items import Board, Player, Purse, Tile
+from scrabble_python import Board, Player, Purse, Scrabble, Tile
 
 
 def populate_test_db() -> None:

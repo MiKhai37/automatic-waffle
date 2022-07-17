@@ -1,5 +1,5 @@
 import random
-from scrabble_python.errors import EmptyPurse, ScrabbleError
+from scrabble_python.errors import EmptyPurse
 from scrabble_python.helpers import create_distribution
 from .tile import Tile
 
@@ -11,18 +11,18 @@ class Purse:
 
     def __init_purse(self) -> list[Tile]:
         init_dist = create_distribution(self.LANG, 'dict')
-        initial_purse = []
+        initial_purse_tiles = []
         for letter in init_dist:
-            initial_purse.extend([Tile(letter)] * init_dist[letter]['count'])
-        random.shuffle(initial_purse)
-        return initial_purse
+            initial_purse_tiles.extend([Tile(letter)] * init_dist[letter]['count'])
+        random.shuffle(initial_purse_tiles)
+        return initial_purse_tiles
 
     def __init_from_dist(self, dist):
-        purse = []
+        purse_tiles = []
         for letter in dist:
-            purse.extend([Tile(letter)] * dist[letter])
-        random.shuffle(purse)
-        return purse
+            purse_tiles.extend([Tile(letter)] * dist[letter])
+        random.shuffle(purse_tiles)
+        return purse_tiles
 
     def shuffle(self):
         random.shuffle(self.tiles)

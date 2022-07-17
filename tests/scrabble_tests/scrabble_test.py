@@ -1,8 +1,6 @@
-from scrabble_python import Scrabble
-from scrabble_python.errors import ScrabbleError
 import pytest
-
-from scrabble_python.items.player import Player
+from scrabble_python import Player, Scrabble
+from scrabble_python.errors import ScrabbleError
 
 custom_config = {
     'board_size': 11,

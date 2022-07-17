@@ -45,9 +45,6 @@ class Scrabble:
         if self.purse is None or self.board is None:
             self.__initialize_game()
 
-    def __eq__(self, __o: object) -> bool:
-        return isinstance(__o, Scrabble) and self.players == __o.players and self.turn == __o.turn and self.curr_player == __o.curr_player and self.history == __o.history and self.purse == __o.purse and self.board == __o.board
-
     def __initialize_game(self) -> None:
         self.purse = Purse(lang=self.config['LANG'])
         self.board = Board(size=self.config['BOARD_SIZE'])
@@ -67,7 +64,6 @@ class Scrabble:
     def save_move(self, tiles) -> None:
         new_words = self.board.get_next_words(tiles)
         scored_points = self.board.compute_score(tiles)
-        self.history[self.turn] = new_words
         self.players[self.curr_player].score += scored_points
         if len(tiles) == self.config['RACK_SIZE']:
             print('Scrabble!!! +50 bonus points!!!')
@@ -77,15 +73,16 @@ class Scrabble:
         if not self.get_curr_rack():
             self.end_game()
 
-        self.pass_turn()
+        self.pass_turn(new_words)
 
-    def __get_print_scores(self):
+    def get_print_scores(self):
         scores = [self.players[pl_id].score for pl_id in self.pl_ids]
         print('Scores:')
         print(*zip(self.pl_ids, scores))
         return scores
 
-    def pass_turn(self):
+    def pass_turn(self, words:list[Word]=None):
+        self.history[self.turn] = words if words is not None else []
         self.turn += 1
         self.curr_player = self.get_curr_player()
 
@@ -107,7 +104,7 @@ class Scrabble:
     def display_info(self) -> None:
         print(f'Turn: {self.turn}')
         print(f'Tiles in purse: {len(self.purse)}')
-        self.__get_print_scores()
+        self.get_print_scores()
         print(self.board)
         print(f'Player turn: {self.curr_player}')
         print(self.get_curr_rack())
@@ -141,7 +138,7 @@ class Scrabble:
         print(f'Finihser {self.curr_player} get {bonus_points} bonus_points by emptying his rack')
         self.players[self.curr_player].score += bonus_points
 
-        final_scores = self.__get_print_scores()
+        final_scores = self.get_print_scores()
         winner_idx = final_scores.index(winner_score := max(final_scores))
         winner = self.pl_ids[winner_idx]
         print(f'Winner is {winner} with a score of {winner_score}')

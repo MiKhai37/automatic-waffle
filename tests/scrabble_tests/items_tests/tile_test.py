@@ -1,5 +1,5 @@
 import pytest
-from scrabble_python.items import Tile
+from scrabble_python import Tile
 
 
 def test_tile_uppercase():

@@ -8,9 +8,9 @@ class Tile:
         self.pos = pos
         if pos is not None:
             self.pos = tuple(pos)
-        self.value = self.__get_value()
+        self.value = self.get_value()
 
-    def __get_value(self):
+    def get_value(self):
         distribution = create_distribution(self.LANG, 'dict')
         return distribution[self.letter]['value']
 
