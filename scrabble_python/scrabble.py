@@ -64,12 +64,15 @@ class Scrabble:
     def get_curr_player(self) -> str:
         return self.pl_ids[(self.turn + self.turn_rd) % self.nb_plys]
 
-    def save_move(self, move) -> None:
-        new_words = self.board.get_next_words(move)
-        scored_points = self.board.compute_score(move)
+    def save_move(self, tiles) -> None:
+        new_words = self.board.get_next_words(tiles)
+        scored_points = self.board.compute_score(tiles)
         self.history[self.turn] = new_words
         self.players[self.curr_player].score += scored_points
-        self.board.add_tiles(move)
+        if len(tiles) == self.config['RACK_SIZE']:
+            print('Scrabble!!! +50 bonus points!!!')
+            self.players[self.curr_player].score += 50
+        self.board.add_tiles(tiles)
 
         if not self.get_curr_rack():
             self.end_game()
