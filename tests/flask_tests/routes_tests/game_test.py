@@ -22,8 +22,8 @@ def test_post_default(client):
     game_doc = get_game_resp.json
     assert game_doc['creator_id'] == basic_config['creator_id']
     assert game_doc['players'] == [{'id': 'player_1', 'pseudo': 'pseudo_1'}]
-    assert game_doc['config']['board_size'] == Scrabble.df_board_size
-    assert game_doc['config']['rack_size'] == Scrabble.df_rack_size
+    assert game_doc['config']['board_size'] == Scrabble.df_bsize
+    assert game_doc['config']['rack_size'] == Scrabble.df_rsize
     assert game_doc['state'] == 'unstarted'
 
 

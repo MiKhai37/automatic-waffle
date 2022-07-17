@@ -25,8 +25,8 @@ def index():
         creator_doc = get_doc_or_404('players', body['creator_id'])
 
         config = {
-            'board_size': body.get('board_size', Scrabble.df_board_size),
-            'rack_size': body.get('rack_size', Scrabble.df_rack_size),
+            'board_size': body.get('board_size', Scrabble.df_bsize),
+            'rack_size': body.get('rack_size', Scrabble.df_rsize),
             'lang': body.get('lang', Scrabble.df_lang),
             'private': body.get('private', False)
         }

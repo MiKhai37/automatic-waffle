@@ -63,7 +63,7 @@ def test_scrabble() -> Scrabble:
         'rack_size': 7,
         'lang': 'fr'
     }
-    return Scrabble(players, scrabble_config)
+    return Scrabble(players = players, **scrabble_config)
 
 
 @pytest.fixture(scope='session')

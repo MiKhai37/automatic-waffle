@@ -5,9 +5,9 @@ from .tile import Tile
 
 
 class Purse:
-    def __init__(self, tiles: list[Tile] = None, lang: str = 'fr') -> None:
+    def __init__(self, dist: dict = None, lang: str = 'fr') -> None:
         self.LANG = lang
-        self.tiles = self.__init_purse() if tiles is None else tiles.copy()
+        self.tiles = self.__init_purse() if dist is None else self.__init_from_dist(dist)
 
     def __init_purse(self) -> list[Tile]:
         init_dist = create_distribution(self.LANG, 'dict')
@@ -17,11 +17,23 @@ class Purse:
         random.shuffle(initial_purse)
         return initial_purse
 
+    def __init_from_dist(self, dist):
+        purse = []
+        for letter in dist:
+            purse.extend([Tile(letter)] * dist[letter])
+        random.shuffle(purse)
+        return purse
+
+    def shuffle(self):
+        random.shuffle(self.tiles)
+
     def __len__(self) -> int:
         return len(self.tiles)
 
     def __str__(self) -> str:
-        return(str(self.get_dist()))
+        dist = self.get_dist()
+        filt_dist = {letter: count for letter, count in dist.items() if count != 0}
+        return(str(filt_dist))
 
     def __repr__(self) -> str:
         return(f'Purse({str(self.get_dist())})')

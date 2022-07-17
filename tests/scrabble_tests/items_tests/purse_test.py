@@ -14,8 +14,8 @@ def test_init_purse():
 
 
 def test_purse():
-    tiles = [Tile('A'), Tile('B'), Tile('C'), Tile('C')]
-    purse = Purse(tiles, 'fr')
+    dist = {'A': 1, 'B': 1, 'C': 2}
+    purse = Purse(dist, 'fr')
     assert len(purse) == 4
     assert purse.get_dist()['A'] == 1 and purse.get_dist()[
         'B'] == 1 and purse.get_dist()['C'] == 2
@@ -26,9 +26,8 @@ def test_draw():
     init_len = len(purse)
     init_dist = purse.get_dist()
     tile = purse.draw()[0]
-    letter = tile.letter
     assert isinstance(tile, Tile)
-    assert purse.get_dist()[letter] == init_dist[letter] - 1
+    assert purse.get_dist()[tile.letter] == init_dist[tile.letter] - 1
     tiles = purse.draw(5)
     assert isinstance(tiles, list) and isinstance(tiles[0], Tile)
     assert len(tiles) == 5
