@@ -33,7 +33,7 @@ def create_app(test_config=None):
 
     @app.route("/hello")
     def hello():
-        return "Automatic Waffle"
+        return "This is Automatic Waffle, the backend of a scrabble app"
 
     # Link with mongo db
     from scrabble_flask import db
